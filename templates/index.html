@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroMail</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="neon-title">NeuroMail</h1>
+                <div class="message-counter" id="messageCounter">
+                    <span id="messageCount">0 писем</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="email-controls">
+                <div class="email-display">
+                    <div class="email-info">
+                        <span class="email-label">Ваш email:</span>
+                        <span class="email-address" id="currentEmail"></span>
+                    </div>
+                    <div class="button-group">
+                        <button class="button icon-button" onclick="copyEmail()" title="Копировать email">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            <span>Копировать</span>
+                        </button>
+                        <button class="button icon-button" onclick="generatePassword()" title="Сгенерировать пароль">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
+                                <path d="M12 6v6l4 2"></path>
+                            </svg>
+                            <span>Пароль</span>
+                        </button>
+                        <button class="button icon-button" onclick="generateName()" title="Сгенерировать имя">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <span>Имя</span>
+                        </button>
+                        <button class="button icon-button refresh-button" onclick="refreshMessages()" title="Проверить почту">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M23 4v6h-6"></path>
+                                <path d="M1 20v-6h6"></path>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                                <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+                            </svg>
+                            <span>Проверить</span>
+                        </button>
+                        <button class="button icon-button primary" onclick="createNewEmail()" title="Создать новую почту">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14"></path>
+                                <path d="M5 12h14"></path>
+                            </svg>
+                            <span>Новая почта</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="email-settings">
+                    <div class="auto-refresh">
+                        <label class="switch">
+                            <input type="checkbox" id="autoRefreshToggle" checked>
+                            <span class="slider round"></span>
+                        </label>
+                        <span>Автообновление</span>
+                    </div>
+                    <div class="refresh-interval">
+                        <select id="refreshInterval">
+                            <option value="2000">2 секунды</option>
+                            <option value="3000">3 секунды</option>
+                            <option value="5000" selected>5 секунд</option>
+                            <option value="10000">10 секунд</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="messages-container">
+                <div class="messages-header">
+                    <div class="message-columns">
+                        <div class="column-header sender">SENDER</div>
+                        <div class="column-header subject">SUBJECT</div>
+                        <div class="column-header view">VIEW</div>
+                    </div>
+                </div>
+                
+                <div class="message-list" id="messageList">
+                    <div class="no-messages">Нет сообщений</div>
+                </div>
+            </div>
+        </main>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <span>Загрузка...</span>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html> 
