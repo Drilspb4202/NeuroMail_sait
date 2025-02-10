@@ -38,9 +38,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files for root directory
-app.mount("/", StaticFiles(directory="."), name="root")
-
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -74,16 +71,17 @@ class EmailMessage(BaseModel):
     verification_link: Optional[str] = None
     html_content: Optional[str] = None
 
-@app.get("/yandex_80d47bc6703d08b0.html", response_class=HTMLResponse)
+@app.get("/yandex_80d47bc6703d08b0.html")
 async def yandex_verification():
-    return """<html>
+    verification_html = """<html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     </head>
     <body>Verification: 80d47bc6703d08b0</body>
 </html>"""
+    return HTMLResponse(content=verification_html, status_code=200)
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 async def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
