@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi import Request
 from pydantic import BaseModel
 from loguru import logger
@@ -37,6 +37,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files for root directory
+app.mount("/", StaticFiles(directory="."), name="root")
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
