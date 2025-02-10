@@ -13,12 +13,14 @@ from config import Settings
 
 class EmailReader:
     BASE_URL = "https://tempmail.glitchy.workers.dev"
+    FALLBACK_URL = "https://api.internal-mail.org" # Альтернативный сервис
     SEE_MESSAGES_URL = f"{BASE_URL}/see"
     GET_MESSAGE_URL = f"{BASE_URL}/message"
 
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.client = httpx.AsyncClient(timeout=30.0)  # Увеличиваем timeout
+        self.client = httpx.AsyncClient(timeout=30.0)
+        self.use_fallback = False
         
     async def __del__(self):
         await self.client.aclose()
@@ -29,18 +31,24 @@ class EmailReader:
             since = datetime.now() - timedelta(days=1)
             
         try:
-            return await self._get_temp_mail_messages(email, since)
+            messages = await self._get_temp_mail_messages(email, since)
+            if not messages and self.use_fallback:
+                # Если основной сервис не работает, пробуем альтернативный
+                messages = await self._get_fallback_messages(email, since)
+            return messages
         except Exception as e:
             logger.error(f"Error reading messages for {email}: {str(e)}")
+            if not self.use_fallback:
+                self.use_fallback = True
+                return await self._get_fallback_messages(email, since)
             return []
     
     async def _get_temp_mail_messages(self, email: str, since: datetime) -> List[Message]:
         try:
             logger.info(f"Fetching messages for {email}")
             
-            for attempt in range(3):  # Попытки с текущим сервисом
+            for attempt in range(3):
                 try:
-                    # Get message list
                     params = {"mail": email}
                     response = await self.client.get(self.SEE_MESSAGES_URL, params=params)
                     response.raise_for_status()
@@ -55,20 +63,10 @@ class EmailReader:
                     messages = []
                     for msg_data in data["messages"]:
                         try:
-                            logger.debug(f"Processing message data: {msg_data}")
-                            
-                            # Ensure message has an ID
                             if not msg_data.get("id"):
-                                logger.warning("Message without ID, skipping")
                                 continue
-                            
-                            # Parse date from string
-                            date_str = msg_data.get("date", "")
-                            try:
-                                date = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-                            except:
-                                logger.warning(f"Could not parse date: {date_str}, using current time")
-                                date = datetime.now()
+                                
+                            date = self._parse_date(msg_data.get("date", ""))
                             
                             if date >= since:
                                 message = Message(
@@ -80,28 +78,43 @@ class EmailReader:
                                     content=msg_data.get("body_text", ""),
                                     html_content=msg_data.get("body_html", "")
                                 )
-                                logger.debug(f"Created message object: {message}")
                                 messages.append(message)
                         except Exception as e:
                             logger.error(f"Error processing message: {str(e)}", exc_info=True)
                             continue
                     
                     return messages
+                    
                 except httpx.HTTPError as he:
                     logger.warning(f"HTTP error on attempt {attempt + 1}: {str(he)}")
-                    if attempt < 2:  # Если это не последняя попытка
-                        await asyncio.sleep(2 ** attempt)  # Экспоненциальная задержка
-                    continue
-                except Exception as e:
-                    logger.error(f"Error on attempt {attempt + 1}: {str(e)}", exc_info=True)
                     if attempt < 2:
                         await asyncio.sleep(2 ** attempt)
                     continue
-            
-            # Если все попытки не удались, возвращаем пустой список
-            logger.warning("All attempts failed, returning empty list")
+                    
+            logger.warning("All attempts failed, switching to fallback service")
+            self.use_fallback = True
             return []
                 
         except Exception as e:
             logger.error(f"Error reading temp mail messages: {str(e)}", exc_info=True)
-            return [] 
+            self.use_fallback = True
+            return []
+            
+    async def _get_fallback_messages(self, email: str, since: datetime) -> List[Message]:
+        """Альтернативный метод получения сообщений"""
+        try:
+            logger.info(f"Using fallback service for {email}")
+            # Здесь будет код для работы с альтернативным сервисом
+            # Пока возвращаем пустой список
+            return []
+        except Exception as e:
+            logger.error(f"Error reading fallback messages: {str(e)}", exc_info=True)
+            return []
+            
+    def _parse_date(self, date_str: str) -> datetime:
+        """Безопасный парсинг даты"""
+        try:
+            return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        except:
+            logger.warning(f"Could not parse date: {date_str}, using current time")
+            return datetime.now() 
