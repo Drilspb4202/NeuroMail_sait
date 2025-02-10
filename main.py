@@ -74,9 +74,14 @@ class EmailMessage(BaseModel):
     verification_link: Optional[str] = None
     html_content: Optional[str] = None
 
-@app.get("/verification", response_class=HTMLResponse)
-async def verification(request: Request):
-    return templates.TemplateResponse("verification.html", {"request": request})
+@app.get("/yandex_80d47bc6703d08b0.html", response_class=HTMLResponse)
+async def yandex_verification():
+    return """<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    </head>
+    <body>Verification: 80d47bc6703d08b0</body>
+</html>"""
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
