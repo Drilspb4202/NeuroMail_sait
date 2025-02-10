@@ -71,6 +71,10 @@ class EmailMessage(BaseModel):
     verification_link: Optional[str] = None
     html_content: Optional[str] = None
 
+@app.get("/verification", response_class=HTMLResponse)
+async def verification(request: Request):
+    return templates.TemplateResponse("verification.html", {"request": request})
+
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
