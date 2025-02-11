@@ -593,39 +593,33 @@ select:hover {
 .verification-link-button {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    width: 100%;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    gap: 8px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #6e8efb, #4a6cf7);
+    border-radius: 6px;
     color: white;
-    border: none;
-    border-radius: 0.75rem;
-    font-size: 1rem;
+    text-decoration: none;
     font-weight: 500;
-    cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: var(--shadow);
+    border: none;
+    cursor: pointer;
 }
 
 .verification-link-button:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg), 0 0 20px var(--primary-color);
-}
-
-.verification-link-button:active {
-    transform: translateY(0);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(74, 108, 247, 0.2);
 }
 
 .verification-link-button svg {
-    width: 20px;
-    height: 20px;
-    transition: transform 0.3s ease;
+    width: 16px;
+    height: 16px;
 }
 
-.verification-link-button:hover svg {
-    transform: translateX(3px);
+.verification-links {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin: 8px 0;
 }
 
 /* Mobile Styles */
@@ -950,28 +944,33 @@ select:hover {
 .verification-link-button {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background-color: var(--primary-color);
+    gap: 8px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #6e8efb, #4a6cf7);
+    border-radius: 6px;
     color: white;
-    border: none;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
+    text-decoration: none;
     font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
     cursor: pointer;
-    transition: all 0.2s ease;
 }
 
 .verification-link-button:hover {
-    background-color: var(--primary-dark);
     transform: translateY(-1px);
-    box-shadow: 0 0 10px var(--primary-color);
+    box-shadow: 0 4px 12px rgba(74, 108, 247, 0.2);
 }
 
 .verification-link-button svg {
     width: 16px;
     height: 16px;
-    stroke: currentColor;
+}
+
+.verification-links {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin: 8px 0;
 }
 
 @media (max-width: 480px) {

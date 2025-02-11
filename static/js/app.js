@@ -514,12 +514,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span>${buttonText}</span>
                             </a>
                         </div>`;
-                } else if (verificationCode) {
-                    subjectContent = `
-                        <div class="verification-code" onclick="copyToClipboard('${verificationCode}')">
-                            <div class="code-label">Код:</div>
-                            <div class="code-value">${verificationCode}</div>
-                        </div>`;
                 } else {
                     subjectContent = escapeHtml(message.subject || 'Без темы');
                 }
