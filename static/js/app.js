@@ -35,17 +35,24 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Response data:', data);
             
             if (!response.ok) {
+                currentEmailElement.textContent = 'Сервис временно перегружен, попробуйте через пару минут';
+                currentEmailElement.style.color = 'var(--danger-color)';
                 throw new Error(data.detail || 'Не удалось создать почтовый ящик');
             }
             
             currentEmail = data.email;
             currentEmailElement.textContent = currentEmail;
+            currentEmailElement.style.color = ''; // Сбрасываем цвет
             
             // Start auto-refresh
             startAutoRefresh();
             
         } catch (error) {
             console.error('Error:', error);
+            if (!currentEmailElement.textContent.includes('Сервис временно перегружен')) {
+                currentEmailElement.textContent = 'Сервис временно перегружен, попробуйте через пару минут';
+                currentEmailElement.style.color = 'var(--danger-color)';
+            }
             showError(error.message);
         } finally {
             hideLoading();
