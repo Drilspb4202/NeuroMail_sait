@@ -595,24 +595,35 @@ select:hover {
     align-items: center;
     gap: 8px;
     padding: 8px 16px;
-    background: linear-gradient(135deg, #6e8efb, #4a6cf7);
-    border-radius: 6px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border-radius: 8px;
     color: white;
     text-decoration: none;
     font-weight: 500;
     transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .verification-link-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(74, 108, 247, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+}
+
+.verification-link-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .verification-link-button svg {
     width: 16px;
     height: 16px;
+    transition: transform 0.2s ease;
+}
+
+.verification-link-button:hover svg {
+    transform: scale(1.1);
 }
 
 .verification-links {
@@ -671,12 +682,13 @@ select:hover {
     }
 
     .verification-link-button {
-        padding: 0.75rem;
+        padding: 8px 12px;
+        font-size: 0.9rem;
     }
-
+    
     .verification-link-button svg {
-        width: 18px;
-        height: 18px;
+        width: 14px;
+        height: 14px;
     }
 }
 
@@ -946,24 +958,35 @@ select:hover {
     align-items: center;
     gap: 8px;
     padding: 8px 16px;
-    background: linear-gradient(135deg, #6e8efb, #4a6cf7);
-    border-radius: 6px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border-radius: 8px;
     color: white;
     text-decoration: none;
     font-weight: 500;
     transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .verification-link-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(74, 108, 247, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+}
+
+.verification-link-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .verification-link-button svg {
     width: 16px;
     height: 16px;
+    transition: transform 0.2s ease;
+}
+
+.verification-link-button:hover svg {
+    transform: scale(1.1);
 }
 
 .verification-links {
@@ -974,12 +997,14 @@ select:hover {
 }
 
 @media (max-width: 480px) {
-    .verification-link-button span {
-        display: none;
+    .verification-link-button {
+        padding: 8px 12px;
+        font-size: 0.9rem;
     }
     
-    .verification-link-button {
-        padding: 0.5rem;
+    .verification-link-button svg {
+        width: 14px;
+        height: 14px;
     }
 }
 

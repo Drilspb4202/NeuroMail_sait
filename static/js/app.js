@@ -497,9 +497,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 let subjectContent;
                 if (verificationLinks.length > 0) {
                     const link = verificationLinks[0];
-                    const isOpenRouter = link.includes('openrouter.ai');
-                    const buttonText = isOpenRouter ? 'Регистрация OpenRouter' : 'Перейти по ссылке';
-                    
                     subjectContent = `
                         <div class="verification-links">
                             <a href="${escapeHtml(link)}" 
@@ -511,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <polyline points="15 3 21 3 21 9"></polyline>
                                     <line x1="10" y1="14" x2="21" y2="3"></line>
                                 </svg>
-                                <span>${buttonText}</span>
+                                <span>Подтвердить регистрацию</span>
                             </a>
                         </div>`;
                 } else {
