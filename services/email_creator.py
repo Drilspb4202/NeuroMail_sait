@@ -109,23 +109,8 @@ class EmailCreator:
     
     async def _create_alternative_temp_mail(self) -> EmailAccount:
         """Создание почты через альтернативный сервис"""
-        try:
-            # Здесь можно добавить альтернативный сервис
-            # Пока возвращаем тестовый аккаунт
-            email = f"test{random.randint(1000, 9999)}@example.com"
-            password = self._generate_password()
-            
-            account = EmailAccount(
-                email=email,
-                password=password,
-                service="temp-mail"
-            )
-            
-            self.accounts.append(account)
-            return account
-        except Exception as e:
-            logger.error(f"Error creating alternative temp mail: {str(e)}")
-            raise
+        logger.error("Сервис временно перегружен, пожалуйста, попробуйте позже")
+        raise Exception("Сервис временно перегружен, пожалуйста, попробуйте позже")
     
     async def list_accounts(self) -> List[EmailAccount]:
         return self.accounts 
