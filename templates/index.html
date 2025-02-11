@@ -15,6 +15,7 @@
         <header class="header">
             <div class="header-content">
                 <h1 class="neon-title">NeuroMail</h1>
+                <p class="header-subtitle">Революция в мире электронной почты. Автоматизация, интеллект и простота для вашего совершенного рабочего дня.</p>
                 <div class="message-counter" id="messageCounter">
                     <span id="messageCount">0 писем</span>
                 </div>
@@ -38,6 +39,10 @@
                     <div class="email-info">
                         <span class="email-label">Ваш email:</span>
                         <span class="email-address" id="currentEmail"></span>
+                        <div class="email-loading" id="emailLoading">
+                            <div class="spinner"></div>
+                            <span>Проверка почты...</span>
+                        </div>
                     </div>
                     <div class="button-group">
                         <button class="button icon-button" onclick="copyEmail()" title="Копировать email">
@@ -79,24 +84,6 @@
                         </button>
                     </div>
                 </div>
-                
-                <div class="email-settings">
-                    <div class="auto-refresh">
-                        <label class="switch">
-                            <input type="checkbox" id="autoRefreshToggle" checked>
-                            <span class="slider round"></span>
-                        </label>
-                        <span>Автообновление</span>
-                    </div>
-                    <div class="refresh-interval">
-                        <select id="refreshInterval">
-                            <option value="2000">2 секунды</option>
-                            <option value="3000">3 секунды</option>
-                            <option value="5000" selected>5 секунд</option>
-                            <option value="10000">10 секунд</option>
-                        </select>
-                    </div>
-                </div>
             </div>
 
             <div class="messages-container">
@@ -127,17 +114,17 @@
 
         <div id="loading" class="loading">
             <div class="spinner"></div>
-            <span>Загрузка...</span>
+            <span>Пожалуйста, подождите...</span>
         </div>
     </div>
 
     <footer class="donation-footer">
         <div class="donation-content">
-            <span class="donation-text">Поддержать проект:</span>
+            <span class="donation-text">Поддержать развитие проекта:</span>
             <div class="donation-address">
                 <span>USDT TRC20:</span>
-                <code class="wallet-address">0x4b7da81f9141e7fc789cda3d7e6f94d28c2c6dc2</code>
-                <button class="copy-button" onclick="copyToClipboard('0x4b7da81f9141e7fc789cda3d7e6f94d28c2c6dc2')" title="Копировать адрес">
+                <code class="wallet-address">TJVdiopy7jwNMzPWr5mRDnx6hjmRs1eCkT</code>
+                <button class="copy-button" onclick="copyToClipboard('TJVdiopy7jwNMzPWr5mRDnx6hjmRs1eCkT')" title="Копировать адрес">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
