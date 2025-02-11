@@ -1,0 +1,339 @@
+# Инструкция по обработке и отображению сообщений в NeuroMail
+
+## 1. Получение и обработка сообщений
+
+### 1.1 Серверная часть (email_reader.py)
+- Получение сообщений:
+  * Запрос к API каждые 5 секунд
+  * URL: https://tempmail.glitchy.workers.dev/see
+  * Параметры: {"mail": email_address}
+
+- Обработка HTML контента:
+  * Использование BeautifulSoup для парсинга
+  * Извлечение текста и форматирования
+  * Сохранение оригинального HTML
+
+### 1.2 Извлечение верификационных данных
+- Поиск верификационных ссылок:
+```python
+def _extract_verification_links(content):
+    # Создаем объект BeautifulSoup
+    soup = BeautifulSoup(content, 'html.parser')
+    
+    # Ищем все ссылки
+    links = []
+    for a in soup.find_all('a', href=True):
+        href = a['href']
+        # Проверяем на ключевые слова верификации
+        if any(keyword in href.lower() for keyword in 
+            ['verify', 'confirm', 'activate', 'validation', 'auth']):
+            links.append(href)
+    
+    # Поиск ссылок в тексте если не найдены в HTML
+    if not links:
+        url_pattern = r'https?://[^\s<>"]+?(?:verify|confirm|activate|validation|auth)[^\s<>"]*'
+        text_links = re.findall(url_pattern, content, re.IGNORECASE)
+        links.extend(text_links)
+    
+    return list(set(links))  # Удаляем дубликаты
+```
+
+- Поиск верификационных кодов:
+```python
+def _extract_verification_code(content):
+    # Паттерны для поиска кода
+    patterns = [
+        r'verification code[:\s]+([A-Z0-9]{4,8})',
+        r'confirmation code[:\s]+([A-Z0-9]{4,8})',
+        r'security code[:\s]+([A-Z0-9]{4,8})',
+        r'one-time code[:\s]+([A-Z0-9]{4,8})',
+        r'код подтверждения[:\s]+([A-Z0-9]{4,8})',
+        r'код[:\s]+([A-Z0-9]{4,8})',
+        r'pin[:\s]+([0-9]{4,8})',
+        r'одноразовый код[:\s]+([0-9]{4,8})',
+        r'temporary code[:\s]+([0-9]{4,8})'
+    ]
+    
+    # Проверяем каждый паттерн
+    for pattern in patterns:
+        match = re.search(pattern, content, re.IGNORECASE)
+        if match:
+            code = match.group(1)
+            # Проверяем что это не год
+            if not re.match(r'^20\d{2}$', code):
+                return code
+    
+    return None
+```
+
+## 2. Отображение сообщений в интерфейсе
+
+### 2.1 Список сообщений (app.js)
+- Рендеринг списка:
+```javascript
+function renderMessages(messages) {
+    messages.forEach(message => {
+        const messageElement = document.createElement('div');
+        messageElement.className = 'message';
+        
+        // Проверяем наличие верификационных данных
+        let verificationContent = '';
+        
+        // Добавляем ссылки верификации
+        if (message.verification_links?.length > 0) {
+            verificationContent += `
+                <div class="verification-links">
+                    ${message.verification_links.map(link => `
+                        <a href="${escapeHtml(link)}" 
+                           target="_blank" 
+                           class="verification-link">
+                            <svg>...</svg>
+                            Ссылка для подтверждения
+                        </a>
+                    `).join('')}
+                </div>`;
+        }
+        
+        // Добавляем код верификации
+        if (message.verification_code) {
+            verificationContent += `
+                <div class="verification-code" 
+                     onclick="copyToClipboard('${escapeHtml(message.verification_code)}')">
+                    <div class="code-label">Код подтверждения:</div>
+                    <div class="code-value">${escapeHtml(message.verification_code)}</div>
+                    <div class="code-copy">Нажмите, чтобы скопировать</div>
+                </div>`;
+        }
+        
+        // Добавляем содержимое сообщения
+        messageElement.innerHTML = `...`;
+        messageList.appendChild(messageElement);
+    });
+}
+```
+
+### 2.2 Модальное окно сообщения
+- Открытие модального окна:
+```javascript
+window.viewMessage = async (messageId) => {
+    try {
+        // Проверяем кэш
+        let messageData = messageCache.get(messageId);
+        
+        if (!messageData) {
+            // Загружаем с сервера
+            const response = await fetch(
+                `/api/email/messages/${currentEmail}/${messageId}`
+            );
+            messageData = await response.json();
+            messageCache.set(messageId, messageData);
+        }
+        
+        // Создаем модальное окно
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        
+        // Форматируем дату
+        const messageDate = new Date(messageData.date)
+            .toLocaleString('ru-RU', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        
+        // Наполняем контентом
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="header-info">
+                        <div class="sender-info">
+                            ${messageData.sender || 'Unknown'}
+                        </div>
+                        <div class="date-info">
+                            ${messageDate}
+                        </div>
+                    </div>
+                    <button class="close-modal">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="message-content">
+                        ${messageData.html_content || 
+                          messageData.content?.replace(/\n/g, '<br>') || 
+                          ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Добавляем на страницу
+        document.body.appendChild(modal);
+        
+        // Добавляем обработчики закрытия
+        const closeModal = () => {
+            modal.classList.add('fade-out');
+            setTimeout(() => modal.remove(), 300);
+        };
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal || 
+                e.target.classList.contains('close-modal')) {
+                closeModal();
+            }
+        });
+        
+        // Добавляем обработчик Escape
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+        
+        // Удаляем обработчик при закрытии
+        modal.addEventListener('remove', () => {
+            document.removeEventListener('keydown', handleEscape);
+        });
+        
+        // Анимация появления
+        requestAnimationFrame(() => modal.style.opacity = '1');
+        
+    } catch (error) {
+        console.error('Error displaying message:', error);
+        showError('Не удалось загрузить сообщение');
+    }
+};
+```
+
+## 3. Стилизация и анимации
+
+### 3.1 Стили верификационных элементов
+```css
+.verification-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.verification-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.verification-code {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: var(--surface-color);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.code-value {
+    font-family: 'Courier New', monospace;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    letter-spacing: 0.1em;
+}
+```
+
+### 3.2 Стили модального окна
+```css
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-content {
+    background: #ffffff;
+    border-radius: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: modalSlideIn 0.3s ease;
+}
+
+.message-content {
+    padding: 2rem;
+    line-height: 1.6;
+    color: #1e293b;
+    font-size: 1rem;
+}
+```
+
+## 4. Дополнительные функции
+
+### 4.1 Копирование в буфер обмена
+```javascript
+window.copyToClipboard = async (text) => {
+    try {
+        await navigator.clipboard.writeText(text);
+        showSuccess('Скопировано в буфер обмена');
+    } catch (error) {
+        console.error('Failed to copy:', error);
+        showError('Не удалось скопировать текст');
+    }
+};
+```
+
+### 4.2 Обработка ошибок
+```javascript
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.textContent = message;
+    
+    const container = document.querySelector('.messages-container');
+    container.insertAdjacentElement('beforebegin', errorDiv);
+    
+    setTimeout(() => errorDiv.remove(), 5000);
+}
+```
+
+## 5. Безопасность
+
+### 5.1 Защита от XSS
+```javascript
+function escapeHtml(unsafe) {
+    if (typeof unsafe !== 'string') return '';
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+```
+
+### 5.2 Валидация данных
+- Проверка входящих данных
+- Санитизация HTML
+- Безопасное открытие ссылок
+- Проверка MIME-типов 
