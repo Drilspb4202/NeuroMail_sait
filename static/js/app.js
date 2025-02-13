@@ -189,7 +189,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailLoadingIndicator = document.getElementById('emailLoading');
     
     let currentEmail = localStorage.getItem('currentEmail');
-    let messages = JSON.parse(localStorage.getItem('messages') || '[]');
+    let messages = JSON.parse(localStorage.getItem('messages') || '[]')
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
     let autoRefreshInterval = null;
     
     // Initialize from localStorage if exists
@@ -201,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Тихая проверка сообщений без полноэкранной загрузки
         loadMessages(currentEmail, true);
     } else {
-        createEmail();
+    createEmail();
     }
     
     // Create email account
@@ -342,7 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadMessages(currentEmail, true);
         
         // Set fixed 5-second interval
-        autoRefreshInterval = setInterval(() => {
+            autoRefreshInterval = setInterval(() => {
             if (document.visibilityState === 'visible' && currentEmail) {
                 console.log('Auto-refresh: loading messages');
                 loadMessages(currentEmail, true);
@@ -366,18 +367,18 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const response = await fetch(`/api/email/messages/${email}`);
             console.log('Messages response status:', response.status);
-
+            
             if (!response.ok) {
                 throw new Error('Не удалось загрузить сообщения');
             }
-
+            
             const newMessages = await response.json();
             console.log('Received messages:', newMessages);
-
+            
             if (!Array.isArray(newMessages)) {
                 throw new Error('Неверный формат данных');
             }
-
+            
             // Создаем карту существующих сообщений для быстрого поиска
             const existingMessages = new Map(cachedMessages.map(msg => [msg.message_id, msg]));
             
@@ -392,22 +393,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 existingMessages.set(newMsg.message_id, newMsg);
             });
             
-            // Преобразуем Map обратно в массив
-            messages = Array.from(existingMessages.values());
+            // Преобразуем Map обратно в массив и сортируем по дате
+            messages = Array.from(existingMessages.values())
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
             localStorage.setItem('messages', JSON.stringify(messages));
             console.log('Updated messages cache:', messages);
 
             await renderMessages(messages);
             updateMessageCount(messages.length);
-
+            
             setTimeout(() => {
                 messagesContainer.classList.remove('updating');
             }, 300);
-
+            
         } catch (error) {
             console.error('Error loading messages:', error);
             if (!silent) {
-                showError(error.message);
+            showError(error.message);
             }
             // On error, use cached messages
             messages = cachedMessages;
@@ -441,6 +443,9 @@ document.addEventListener('DOMContentLoaded', () => {
             messageList.innerHTML = '<div class="no-messages">Нет сообщений</div>';
             return;
         }
+
+        // Sort messages by date in descending order (newest first)
+        messages = [...messages].sort((a, b) => new Date(b.date) - new Date(a.date));
         
         // Получаем текущие сообщения
         const currentMessages = new Set(Array.from(messageList.children).map(el => el.dataset.messageId));
@@ -503,11 +508,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                target="_blank" 
                                class="verification-link-button"
                                title="${escapeHtml(link)}">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                    <polyline points="15 3 21 3 21 9"></polyline>
-                                    <line x1="10" y1="14" x2="21" y2="3"></line>
-                                </svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
                                 <span>Подтвердить регистрацию</span>
                             </a>
                         </div>`;
@@ -531,7 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 
                 if (isNew) {
-                    messageList.appendChild(messageElement);
+                messageList.appendChild(messageElement);
                     // Remove the new-message class after animation
                     setTimeout(() => {
                         messageElement.classList.remove('new-message');
@@ -701,8 +706,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Пытаемся получить свежую версию с сервера
                 try {
                     const response = await fetch(`/api/email/messages/${currentEmail}/${messageId}`);
-                    console.log('Response status:', response.status);
-                    
+            console.log('Response status:', response.status);
+            
                     if (response.ok) {
                         const message = await response.json();
                         console.log('Message data:', message);
@@ -735,9 +740,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Response status:', response.status);
                 
                 if (response.ok) {
-                    const message = await response.json();
-                    console.log('Message data:', message);
-                    
+            const message = await response.json();
+            console.log('Message data:', message);
+            
                     if (message) {
                         // Сохраняем в кеш
                         cachedMessages.push(message);
@@ -774,8 +779,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         console.log('Verification links:', verificationLinks);
         console.log('Verification code:', verificationCode);
-        
-        // Подготавливаем контент
+            
+            // Подготавливаем контент
         let messageContent = '';
         
         if (!message.html_content && !message.content) {
@@ -806,11 +811,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             messageContent = message.html_content || message.content;
         }
-        
-        // Создаем модальное окно
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        
+            
+            // Создаем модальное окно
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            
         // Добавляем верификационные данные в начало контента
         let verificationContent = '';
         
@@ -833,11 +838,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                target="_blank" 
                                class="verification-link-button"
                                rel="noopener noreferrer">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                    <polyline points="15 3 21 3 21 9"></polyline>
-                                    <line x1="10" y1="14" x2="21" y2="3"></line>
-                                </svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
                                 <span>${link.includes('click here') ? 'Нажмите здесь' : 'Перейти по ссылке'}</span>
                             </a>
                             <button class="copy-button" onclick="copyToClipboard('${escapeHtml(link)}')" title="Копировать ссылку">
@@ -845,38 +850,38 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                 </svg>
-                            </button>
-                        </div>
+                        </button>
+                    </div>
                     `).join('')}
                 </div>`;
-        }
+            }
         
         messageContent = verificationContent + messageContent;
-        
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <div class="header-info">
+            
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="header-info">
                         <h3>${escapeHtml(message.subject || 'Без темы')}</h3>
-                        <div class="message-meta">
+                            <div class="message-meta">
                             <span class="sender">${escapeHtml(message.sender)}</span>
-                            <span class="date">${new Date(message.date).toLocaleString()}</span>
+                                <span class="date">${new Date(message.date).toLocaleString()}</span>
+                            </div>
                         </div>
+                        <button type="button" class="close-modal">×</button>
                     </div>
-                    <button type="button" class="close-modal">×</button>
+                    <div class="modal-body">
+                        ${messageContent}
+                    </div>
                 </div>
-                <div class="modal-body">
-                    ${messageContent}
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        console.log('Modal created and added to DOM');
-        
-        // Add click handler to close modal
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal || e.target.classList.contains('close-modal')) {
+            `;
+            
+            document.body.appendChild(modal);
+            console.log('Modal created and added to DOM');
+            
+            // Add click handler to close modal
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal || e.target.classList.contains('close-modal')) {
                 modal.classList.add('closing');
                 setTimeout(() => {
                     modal.remove();
@@ -1015,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Failed to copy password:', error);
                 statusText.textContent = 'Не удалось скопировать пароль';
             }
-        });
+            });
     };
     
     // Create new email account
@@ -1228,7 +1233,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function hideLoading() {
         loadingIndicator.classList.remove('active');
     }
-
+    
     function showEmailLoading() {
         emailLoadingIndicator.style.display = 'inline-flex';
     }
