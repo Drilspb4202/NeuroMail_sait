@@ -949,78 +949,285 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Generate and copy password
     window.generatePassword = async () => {
-        const length = 16; // Длина пароля
+        // Remove any existing password modals and their styles
+        document.querySelectorAll('.modal').forEach(modal => {
+            if (modal.querySelector('.temp-password-modal')) {
+                modal.remove();
+            }
+        });
+        document.querySelectorAll('style').forEach(style => {
+            if (style.textContent.includes('.temp-password-modal')) {
+                style.remove();
+            }
+        });
+
+        const length = 12;
         const charset = {
             lowercase: 'abcdefghijklmnopqrstuvwxyz',
             uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             numbers: '0123456789',
-            symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+            symbols: '!@#$%^&*()_+-=[]{}|;:,.?'
         };
         
-        // Убедимся, что в пароле будет хотя бы по одному символу каждого типа
         let password = '';
         password += charset.lowercase[Math.floor(Math.random() * charset.lowercase.length)];
         password += charset.uppercase[Math.floor(Math.random() * charset.uppercase.length)];
         password += charset.numbers[Math.floor(Math.random() * charset.numbers.length)];
         password += charset.symbols[Math.floor(Math.random() * charset.symbols.length)];
         
-        // Добавляем остальные случайные символы
         const allChars = Object.values(charset).join('');
         for (let i = password.length; i < length; i++) {
             password += allChars[Math.floor(Math.random() * allChars.length)];
         }
         
-        // Перемешиваем пароль
         password = password.split('').sort(() => Math.random() - 0.5).join('');
         
-        // Создаем модальное окно с паролем
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.innerHTML = `
-            <div class="modal-content password-modal">
-                <div class="modal-header">
-                    <h3>Сгенерированный пароль</h3>
-                    <button type="button" class="close-modal">×</button>
+            <div class="modal-content temp-password-modal">
+                <div class="temp-password-header">
+                    <h3>Надежный пароль</h3>
+                    <button type="button" class="close-modal" onclick="closePasswordModal(this)">×</button>
                 </div>
-                <div class="modal-body">
-                    <div class="password-container">
-                        <div class="password-display" style="cursor: pointer;" title="Нажмите, чтобы скопировать">
+                <div class="temp-password-body">
+                    <div class="temp-password-container">
+                        <div class="lock-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </div>
+                        <div class="temp-password-display">
                             ${password}
                         </div>
-                        <div class="password-status">
-                            <svg class="checkmark-small" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                                <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
-                                <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-                            </svg>
-                            <span>Нажмите на пароль, чтобы скопировать</span>
+                        <div class="temp-password-info">
+                            <div class="password-strength">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
+                                    <path d="M12 16l4-4"></path>
+                                    <path d="M8 12l2 2"></path>
+                                    <path d="M12 8v.01"></path>
+                                </svg>
+                                <span>Содержит буквы, цифры и символы</span>
+                            </div>
+                            <div class="password-security">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                </svg>
+                                <span>Высокая надежность</span>
+                            </div>
                         </div>
+                        <button class="copy-password-button" onclick="copyPasswordAndClose('${password}', this)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            <span>Скопировать пароль</span>
+                        </button>
+                        <button class="generate-new-password" onclick="generatePassword()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M23 4v6h-6"></path>
+                                <path d="M1 20v-6h6"></path>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                                <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+                            </svg>
+                            <span>Сгенерировать новый</span>
+                        </button>
                     </div>
                 </div>
             </div>
         `;
         
         document.body.appendChild(modal);
+
+        // Add styles for the new design
+        const style = document.createElement('style');
+        style.textContent = `
+            .temp-password-modal {
+                max-width: 400px !important;
+                background: white !important;
+                border-radius: 20px !important;
+                overflow: hidden;
+            }
+
+            .temp-password-header {
+                background: var(--primary-color);
+                padding: 1rem 1.5rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .temp-password-header h3 {
+                color: white;
+                margin: 0;
+                font-size: 1.2rem;
+                font-weight: 500;
+            }
+
+            .temp-password-header .close-modal {
+                color: white;
+                opacity: 0.8;
+                font-size: 1.5rem;
+                padding: 0;
+                background: none;
+                border: none;
+                cursor: pointer;
+            }
+
+            .temp-password-body {
+                padding: 2rem;
+            }
+
+            .temp-password-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1.5rem;
+            }
+
+            .lock-icon {
+                width: 48px;
+                height: 48px;
+                background: var(--primary-color);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+            }
+
+            .temp-password-display {
+                font-family: 'Courier New', monospace;
+                font-size: 1.5rem;
+                font-weight: 600;
+                color: var(--primary-color);
+                background: rgba(168, 85, 247, 0.1);
+                padding: 1rem 2rem;
+                border-radius: 12px;
+                letter-spacing: 0.1em;
+                word-break: break-all;
+                text-align: center;
+                max-width: 100%;
+            }
+
+            .temp-password-info {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+                width: 100%;
+            }
+
+            .password-strength,
+            .password-security {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                color: var(--text-secondary);
+                font-size: 0.9rem;
+            }
+
+            .password-strength svg,
+            .password-security svg {
+                color: var(--primary-color);
+                flex-shrink: 0;
+            }
+
+            .copy-password-button,
+            .generate-new-password {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                padding: 0.75rem;
+                border-radius: 8px;
+                border: none;
+                cursor: pointer;
+                font-size: 0.95rem;
+                transition: all 0.2s ease;
+            }
+
+            .copy-password-button {
+                background: var(--primary-color);
+                color: white;
+            }
+
+            .generate-new-password {
+                background: rgba(168, 85, 247, 0.1);
+                color: var(--primary-color);
+            }
+
+            .copy-password-button:hover {
+                background: var(--primary-dark);
+            }
+
+            .generate-new-password:hover {
+                background: rgba(168, 85, 247, 0.2);
+            }
+
+            @media (max-width: 480px) {
+                .temp-password-modal {
+                    width: 90%;
+                    margin: 1rem;
+                }
+
+                .temp-password-body {
+                    padding: 1.5rem;
+                }
+
+                .temp-password-display {
+                    font-size: 1.25rem;
+                    padding: 0.75rem 1rem;
+                }
+
+                .temp-password-info {
+                    font-size: 0.85rem;
+                }
+
+                .copy-password-button,
+                .generate-new-password {
+                    padding: 0.75rem;
+                    font-size: 0.9rem;
+                }
+            }
+        `;
+        document.head.appendChild(style);
         
         // Добавляем обработчик для закрытия
         modal.addEventListener('click', (e) => {
             if (e.target === modal || e.target.classList.contains('close-modal')) {
                 modal.remove();
-            }
-        });
-
-        // Добавляем обработчик клика на пароль
-        const passwordDisplay = modal.querySelector('.password-display');
-        const statusText = modal.querySelector('.password-status span');
-        
-        passwordDisplay.addEventListener('click', async () => {
-            try {
-                await navigator.clipboard.writeText(password);
-                modal.remove(); // Сразу закрываем окно после копирования
-            } catch (error) {
-                console.error('Failed to copy password:', error);
-                statusText.textContent = 'Не удалось скопировать пароль';
+                style.remove();
             }
             });
+    };
+    
+    // Add new function to handle copy and close
+    window.copyPasswordAndClose = async (password, button) => {
+        try {
+            await navigator.clipboard.writeText(password);
+            showSuccess('Пароль скопирован в буфер обмена');
+            closePasswordModal(button);
+        } catch (error) {
+            console.error('Failed to copy:', error);
+            showError('Не удалось скопировать пароль');
+        }
+    };
+
+    // Add new function to close password modal
+    window.closePasswordModal = (element) => {
+        const modal = element.closest('.modal');
+        if (modal) {
+            modal.remove();
+            // Remove associated styles
+            document.querySelectorAll('style').forEach(style => {
+                if (style.textContent.includes('.temp-password-modal')) {
+                    style.remove();
+                }
+            });
+        }
     };
     
     // Create new email account
@@ -1135,93 +1342,317 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Generate and copy name with modal
     window.generateName = () => {
+        // Remove any existing name generation modals and their styles
+        document.querySelectorAll('.modal').forEach(modal => {
+            if (modal.querySelector('.name-generation-modal')) {
+                modal.remove();
+            }
+        });
+        document.querySelectorAll('style').forEach(style => {
+            if (style.textContent.includes('.name-generation-modal')) {
+                style.remove();
+            }
+        });
+
         const maleNames = [
-            'James', 'John', 'Robert', 'Michael', 'William', 'David', 'Richard', 'Joseph',
-            'Thomas', 'Charles', 'Christopher', 'Daniel', 'Matthew', 'Anthony', 'Donald',
-            'Mark', 'Paul', 'Steven', 'Andrew', 'Kenneth', 'Joshua', 'Kevin', 'Brian', 'George'
+            'James', 'John', 'Robert', 'Michael', 'William', 'David', 'Richard', 
+            'Joseph', 'Thomas', 'Charles', 'Christopher', 'Daniel', 'Matthew',
+            'Anthony', 'Donald', 'Mark', 'Paul', 'Steven', 'Andrew', 'Kenneth'
         ];
         
         const femaleNames = [
-            'Mary', 'Patricia', 'Jennifer', 'Linda', 'Elizabeth', 'Barbara', 'Susan', 'Jessica',
-            'Sarah', 'Karen', 'Lisa', 'Nancy', 'Betty', 'Margaret',
-            'Kimberly', 'Emily', 'Donna', 'Michelle', 'Carol', 'Amanda', 'Dorothy', 'Melissa'
+            'Mary', 'Patricia', 'Jennifer', 'Linda', 'Elizabeth', 'Barbara', 'Susan',
+            'Jessica', 'Sarah', 'Karen', 'Lisa', 'Nancy', 'Betty', 'Margaret',
+            'Sandra', 'Ashley', 'Kimberly', 'Emily', 'Donna', 'Michelle'
         ];
         
         const surnames = [
-            'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis',
-            'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson',
-            'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Thompson', 'White',
-            'Harris', 'Clark', 'Lewis', 'Robinson', 'Walker', 'Hall', 'Young', 'King'
+            'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller',
+            'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez',
+            'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin'
         ];
         
-        // Randomly select gender
+        // Randomly select gender and name
         const isMale = Math.random() < 0.5;
-        
-        // Select random name based on gender
         const firstName = isMale 
             ? maleNames[Math.floor(Math.random() * maleNames.length)]
             : femaleNames[Math.floor(Math.random() * femaleNames.length)];
-        
-        // Select random surname
         const surname = surnames[Math.floor(Math.random() * surnames.length)];
         
-        // Generate login (firstname_surname in lowercase)
-        const login = `${firstName.toLowerCase()}_${surname.toLowerCase()}`;
-        
-        // Create modal with generated name
+        // Generate login
+        const randomNum = Math.floor(Math.random() * 1000);
+        const login = `${firstName.toLowerCase()}.${surname.toLowerCase()}${randomNum}`;
+        const fullName = `${firstName} ${surname}`;
+
+        // Create modal
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.innerHTML = `
-            <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-content name-generation-modal">
                 <div class="modal-header">
-                    <h3>Сгенерированное имя</h3>
-                    <button type="button" class="close-modal">×</button>
+                    <span>Генерация данных</span>
+                    <button type="button" class="close-modal" onclick="closeNameModal(this)">×</button>
                 </div>
                 <div class="modal-body">
-                    <div class="generated-info">
-                        <div class="info-row">
-                            <span class="info-label">Имя:</span>
-                            <span class="info-value">${firstName}</span>
-                            <button class="copy-button" onclick="copyToClipboard('${firstName}')">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                </svg>
-                            </button>
+                    <div class="name-generation-container">
+                        <div class="user-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
                         </div>
-                        <div class="info-row">
-                            <span class="info-label">Фамилия:</span>
-                            <span class="info-value">${surname}</span>
-                            <button class="copy-button" onclick="copyToClipboard('${surname}')">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                </svg>
-                            </button>
+                        <div class="generated-fields">
+                            <div class="field-container">
+                                <div class="field-label">Имя</div>
+                                <div class="field" onclick="copyToClipboard('${firstName}')" title="Нажмите, чтобы скопировать">${firstName}</div>
+                            </div>
+                            <div class="field-container">
+                                <div class="field-label">Фамилия</div>
+                                <div class="field" onclick="copyToClipboard('${surname}')" title="Нажмите, чтобы скопировать">${surname}</div>
+                            </div>
+                            <div class="field-container">
+                                <div class="field-label">Логин</div>
+                                <div class="field" onclick="copyToClipboard('${login}')" title="Нажмите, чтобы скопировать">${login}</div>
+                            </div>
                         </div>
-                        <div class="info-row">
-                            <span class="info-label">Логин:</span>
-                            <span class="info-value">${login}</span>
-                            <button class="copy-button" onclick="copyToClipboard('${login}')">
+                        <div class="validity-info">
+                            <div class="timer-info">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                Действительно: 5:00 минут
+                            </div>
+                            <div class="usage-info">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                </svg>
+                                Данные действительны для одной регистрации
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="copy-data-button" onclick="copyToClipboard('${fullName}\\n${login}')">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                 </svg>
+                                Копировать все данные
+                            </button>
+                            <button class="generate-new-button" onclick="generateName()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M23 4v6h-6"></path>
+                                    <path d="M1 20v-6h6"></path>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                                    <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+                                </svg>
+                                Сгенерировать новое
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
-        
-        // Add click handler to close modal when clicking outside or on close button
+
+        // Add styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .name-generation-modal {
+                max-width: 360px !important;
+                background: white !important;
+                border-radius: 20px !important;
+                overflow: hidden;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            }
+
+            .name-generation-modal .modal-header {
+                background: var(--primary-color);
+                padding: 1rem;
+                color: white;
+                font-size: 1rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .name-generation-modal .close-modal {
+                color: white;
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                cursor: pointer;
+                padding: 0;
+                line-height: 1;
+            }
+
+            .modal-body {
+                padding: 1.5rem;
+            }
+
+            .name-generation-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1.25rem;
+            }
+
+            .user-icon {
+                width: 48px;
+                height: 48px;
+                background: var(--primary-color);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+            }
+
+            .generated-fields {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .field-container {
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+
+            .field-label {
+                font-size: 0.875rem;
+                color: var(--text-secondary);
+                margin-left: 0.5rem;
+            }
+
+            .field {
+                background: rgba(168, 85, 247, 0.1);
+                padding: 0.75rem 1rem;
+                border-radius: 0.5rem;
+                color: var(--primary-color);
+                font-weight: 500;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .field:hover {
+                background: rgba(168, 85, 247, 0.2);
+                transform: translateY(-1px);
+            }
+
+            .field:active {
+                transform: translateY(0);
+            }
+
+            .validity-info {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .timer-info,
+            .usage-info {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                color: var(--text-secondary);
+                font-size: 0.875rem;
+            }
+
+            .timer-info svg,
+            .usage-info svg {
+                color: var(--primary-color);
+                flex-shrink: 0;
+            }
+
+            .action-buttons {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .copy-data-button,
+            .generate-new-button {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                padding: 0.75rem;
+                border-radius: 0.5rem;
+                border: none;
+                cursor: pointer;
+                font-size: 0.875rem;
+                transition: all 0.2s ease;
+            }
+
+            .copy-data-button {
+                background: var(--primary-color);
+                color: white;
+            }
+
+            .generate-new-button {
+                background: #f3f4f6;
+                color: var(--text-secondary);
+            }
+
+            .copy-data-button:hover {
+                background: var(--primary-dark);
+            }
+
+            .generate-new-button:hover {
+                background: #e5e7eb;
+            }
+
+            @media (max-width: 480px) {
+                .name-generation-modal {
+                    width: 90%;
+                    margin: 1rem;
+                }
+
+                .modal-body {
+                    padding: 1rem;
+                }
+
+                .field {
+                    font-size: 0.9rem;
+                }
+
+                .timer-info,
+                .usage-info {
+                    font-size: 0.8rem;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Add click handler to close modal
         modal.addEventListener('click', (e) => {
-            if (e.target === modal || e.target.classList.contains('close-modal')) {
-                modal.remove();
+            if (e.target === modal) {
+                closeNameModal(e.target);
             }
         });
+    };
+    
+    // Add new function to close name modal
+    window.closeNameModal = (element) => {
+        const modal = element.closest('.modal');
+        if (modal) {
+            modal.remove();
+            // Remove associated styles
+            document.querySelectorAll('style').forEach(style => {
+                if (style.textContent.includes('.name-generation-modal')) {
+                    style.remove();
+                }
+            });
+        }
     };
     
     // Copy text to clipboard
