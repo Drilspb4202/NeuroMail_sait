@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
             messageList.innerHTML = '<div class="no-messages">Нет сообщений</div>';
             return;
         }
-
+        
         // Sort messages by date in descending order (newest first)
         messages = [...messages].sort((a, b) => new Date(b.date) - new Date(a.date));
         
@@ -1026,23 +1026,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create new email account
     window.createNewEmail = async () => {
         try {
-            // Очищаем все данные из localStorage перед созданием новой почты
+            // Очищаем все данные из localStorage
             localStorage.clear();
             
             // Очищаем все переменные
             currentEmail = null;
             messages = [];
+            
+            // Останавливаем автообновление
             if (autoRefreshInterval) {
                 clearInterval(autoRefreshInterval);
                 autoRefreshInterval = null;
             }
 
+            // Очищаем DOM элементы
+            messageList.innerHTML = '<div class="no-messages">Нет сообщений</div>';
+            updateMessageCount(0);
+            
             // Очищаем интерфейс и показываем загрузку
             currentEmailElement.textContent = 'Создание новой почты...';
             currentEmailElement.style.color = 'var(--text-secondary)';
-            renderMessages(messages);
-            updateMessageCount(0);
             showEmailLoading();
+            
+            // Удаляем все модальные окна
+            document.querySelectorAll('.modal').forEach(modal => modal.remove());
+            
+            // Удаляем все уведомления
+            document.querySelectorAll('.notification, .error-message, .success-message').forEach(notification => notification.remove());
             
             // Удаляем старую почту если она существует
             const oldEmail = localStorage.getItem('currentEmail');
