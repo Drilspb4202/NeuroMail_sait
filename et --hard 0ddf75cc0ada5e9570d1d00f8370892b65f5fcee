@@ -1,0 +1,167 @@
+[33mcommit 240306a4ba213ffd3c65d98ea59c9feb0c0459ec[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Thu Feb 13 17:38:57 2025 -0700
+
+    Добавлен счетчик Яндекс.Метрики
+
+[33mcommit 5d8a0b5851788a76f009ebf5dbd0f707f7536f30[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Thu Feb 13 17:35:30 2025 -0700
+
+    Обновлен блок рекламы канала по ароматерапии
+
+[33mcommit 0ddf75cc0ada5e9570d1d00f8370892b65f5fcee[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Thu Feb 13 17:28:11 2025 -0700
+
+    Обновлен блок рекламы канала по ароматерапии
+
+[33mcommit 3878046820c845fd5d86e6ad8e040d3ad07166a2[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Thu Feb 13 17:10:41 2025 -0700
+
+    Добавлен блок рекламы Telegram-сообщества
+
+[33mcommit 5679ac0457b67ca10b06e39f2a775c790ca6dc2b[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Thu Feb 13 16:57:44 2025 -0700
+
+    Добавлен полноэкранный рекламный блок Яндекс.RTB
+
+[33mcommit 9733959efbdc54e48caa465804c4d1cf8ca7f14f[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Thu Feb 13 16:55:16 2025 -0700
+
+    Улучшена мобильная версия сайта, исправлены стили модальных окон
+
+[33mcommit 88f4f6f4dc8df5ad4687b61eb2a4c3527cee491d[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Thu Feb 13 16:41:07 2025 -0700
+
+    Исправлено закрытие модальных окон для генерации паролей и имен
+
+[33mcommit e86d05b3defab76480ca3484730c181a5b45878a[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Thu Feb 13 15:41:37 2025 -0700
+
+    Добавлена полная очистка данных при создании новой email учетной записи
+
+[33mcommit 83b63225097d7162d90ae68db8b1d01afe4a65af[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Thu Feb 13 15:34:56 2025 -0700
+
+    Изменен порядок отображения сообщений: новые сверху, сортировка по времени получения
+
+[33mcommit 9c1b1dd8ff80a79afbe0ccdba75532079ad5c0eb[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Tue Feb 11 13:49:20 2025 -0700
+
+    Обновлен стиль кнопок верификации для всех ссылок
+
+[33mcommit 2e342f4a1df0e4694818a13e80662aa92c599444[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Tue Feb 11 13:46:08 2025 -0700
+
+    Исправлено отображение ссылок в секции SUBJECT
+
+[33mcommit 2e6065dde98c059b6dbad22d25c3e458839b64e6[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Tue Feb 11 13:30:42 2025 -0700
+
+    Обновлены стили модального окна и добавлены улучшения в обработке сообщений
+
+[33mcommit 46cfd7e321d7d76ef9f73226351994db0e1dd311[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Tue Feb 11 13:29:54 2025 -0700
+
+    Обновлен текст подзаголовка и адрес кошелька для поддержки проекта
+
+[33mcommit aacb7b254b2bee74d1b5ff93562b727c58afc256[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Mon Feb 10 21:12:36 2025 -0700
+
+    Добавлена сноска для поддержки проекта с USDT TRC20 адресом
+
+[33mcommit 7de926874404b01e44b80073b3c7551e7a8cf950[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Mon Feb 10 21:09:25 2025 -0700
+
+    Улучшено отображение ошибки при перегрузке сервиса
+
+[33mcommit 52c097c2d53e6e88b0d5c994ead7d2ae92163f03[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Mon Feb 10 21:01:31 2025 -0700
+
+    Изменено сообщение об ошибке при недоступности сервиса
+
+[33mcommit f284fe56a126b5060dfe2a36cd907c5958903062[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Mon Feb 10 16:32:28 2025 -0700
+
+    Improve message handling and add verification code display
+
+[33mcommit 64a5e75df078104d10a3fdfb0c965d87210e228c[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Mon Feb 10 16:19:41 2025 -0700
+
+    Add second Yandex.RTB advertising block
+
+[33mcommit d532a7fe0a872a94839f7687eeb8d1acd632b5bd[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Mon Feb 10 16:16:02 2025 -0700
+
+    Add Yandex.RTB advertising block
+
+[33mcommit 361dea41aabc238174ae42e0903dc7be20e2f82a[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Mon Feb 10 16:07:41 2025 -0700
+
+    Fix routing conflicts and update verification endpoint
+
+[33mcommit c06959730811dbc3d5863c6f767eee8eea818bb6[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Mon Feb 10 16:02:22 2025 -0700
+
+    Update verification file handling to serve directly from route
+
+[33mcommit c5952006c2e2efe827556f0d8dc1566e9ef8c215[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Mon Feb 10 15:56:10 2025 -0700
+
+    Move Yandex verification file to root directory and update FastAPI config
+
+[33mcommit 3f7f436c7920e0a78677385c9f7758dcd50f7ba8[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Mon Feb 10 15:53:31 2025 -0700
+
+    Add retry logic and better error handling for email services
+
+[33mcommit 07267d67f7bdf9be9625f837de410fef593317f2[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Mon Feb 10 15:47:02 2025 -0700
+
+    Add Yandex verification file
+
+[33mcommit 1bb8003a9d5aa7de24dcab6151fbe6c8763c776b[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Mon Feb 10 15:42:03 2025 -0700
+
+    Add verification page for search engines
+
+[33mcommit 3dd597a5dabd8d81be65804c45d554ac78f1a3d1[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Mon Feb 10 15:36:48 2025 -0700
+
+    Update environment variables configuration
+
+[33mcommit 59808c64a6f51982355c0f24f6aa36568edb8ff9[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Mon Feb 10 15:20:41 2025 -0700
+
+    Add deployment configuration
+
+[33mcommit 32eaad0b17548c12fd4b8b5b4097efc7c50c73d8[m
+Author: Drilspb4202 <dirsoiga@4146c987a9a6>
+Date:   Mon Feb 10 14:51:29 2025 -0700
+
+    Initial commit: NeuroMail project setup

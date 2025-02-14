@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded');
     
-    // Add styles for error container
+    // Add styles for error container and verification code
     const style = document.createElement('style');
     style.textContent = `
         .error-container {
@@ -167,6 +167,42 @@ document.addEventListener('DOMContentLoaded', () => {
             align-items: center;
             gap: 0.5rem;
             margin: 0.25rem 0;
+        }
+
+        .verification-code-header {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: rgba(168, 85, 247, 0.1);
+            border-radius: 6px;
+            color: var(--primary-color);
+            font-weight: 500;
+            display: inline-block;
+        }
+        
+        .verification-code-header .code-value {
+            font-family: monospace;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        
+        .message-verification {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .verification-code-inline {
+            font-size: 0.875rem;
+            color: var(--primary-color);
+            font-weight: 500;
+            background: rgba(168, 85, 247, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .subject-text {
+            color: var(--text-color);
         }
     `;
     document.head.appendChild(style);
@@ -440,7 +476,21 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Rendering messages:', messages);
         
         if (!Array.isArray(messages) || messages.length === 0) {
-            messageList.innerHTML = '<div class="no-messages">Нет сообщений</div>';
+            messageList.innerHTML = `
+                <div class="community-promo">
+                    <div class="promo-content">
+                        <div class="promo-text">
+                            <h2 class="promo-title">Посетите канал по аромотерапии</h2>
+                            <p class="promo-description">Присоединяйтесь и узнайте секреты эфирных масел и аромадиагностики! (На правах рекламы)</p>
+                        </div>
+                        <a href="https://t.me/radmila_essential_oil" target="_blank" rel="noopener noreferrer" class="telegram-button">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215l-16.5 7.5a2.25 2.25 0 0 0 .126 4.17l3.9 1.3v3.882a2.25 2.25 0 0 0 3.898 1.549l2.876-2.876 3.837 2.87a2.242 2.242 0 0 0 3.527-1.376l4.5-16.5a2.25 2.25 0 0 0-2.742-2.734z"></path>
+                            </svg>
+                            Подписаться
+                        </a>
+                    </div>
+                </div>`;
             return;
         }
         
@@ -515,6 +565,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             </svg>
                                 <span>Подтвердить регистрацию</span>
                             </a>
+                        </div>`;
+                } else if (verificationCode) {
+                    subjectContent = `
+                        <div class="message-verification">
+                            <span class="subject-text">${escapeHtml(message.subject || 'Без темы')}</span>
+                            <div class="verification-code-inline">Код: ${verificationCode}</div>
                         </div>`;
                 } else {
                     subjectContent = escapeHtml(message.subject || 'Без темы');
@@ -761,6 +817,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
+    // Extract verification code from content
+    function _extract_verification_code(content) {
+        if (!content) return null;
+        
+        // Игнорируем даты и годы
+        const datePatterns = [
+            /\d{2}\.\d{2}\.\d{4}/,  // DD.MM.YYYY
+            /\d{4}-\d{2}-\d{2}/,    // YYYY-MM-DD
+            /\d{2}\/\d{2}\/\d{4}/,  // DD/MM/YYYY
+            /20\d{2}/               // Year 20XX
+        ];
+        
+        // Проверяем, не является ли текст датой
+        function isDate(text) {
+            return datePatterns.some(pattern => pattern.test(text));
+        }
+        
+        const patterns = [
+            /verification code[:\s]+([A-Z0-9]{4,8})/i,
+            /confirmation code[:\s]+([A-Z0-9]{4,8})/i,
+            /security code[:\s]+([A-Z0-9]{4,8})/i,
+            /one-time code[:\s]+([A-Z0-9]{4,8})/i,
+            /код подтверждения[:\s]+([A-Z0-9]{4,8})/i,
+            /код[:\s]+([A-Z0-9]{4,8})/i,
+            /pin[:\s]+([0-9]{4,8})/i,
+            /одноразовый код[:\s]+([0-9]{4,8})/i,
+            /temporary code[:\s]+([0-9]{4,8})/i,
+            /Your verification code is[:\s]+([A-Z0-9]{4,8})/i,
+            /code is here![:\s]*([A-Z0-9]{4,8})/i,
+            /here!([A-Z0-9]{4,8})/i
+        ];
+        
+        for (const pattern of patterns) {
+            const match = content.match(pattern);
+            if (match) {
+                const code = match[1];
+                // Проверяем что это не дата и не год
+                if (!isDate(code)) {
+                    return code;
+                }
+            }
+        }
+        
+        // Если не нашли по шаблонам, ищем любой код после фразы "code is here"
+        const codeAfterPhrase = content.match(/code is here!?\s*([^\s\n]+)/i);
+        if (codeAfterPhrase && codeAfterPhrase[1]) {
+            return codeAfterPhrase[1];
+        }
+        
+        return null;
+    }
+
     // Функция для отображения сообщения
     function displayMessage(message) {
         // Извлекаем верификационные данные
@@ -775,8 +883,11 @@ document.addEventListener('DOMContentLoaded', () => {
             verificationCode = message.verification_code;
         } else if (message.content) {
             verificationCode = _extract_verification_code(message.content);
+        } else if (message.subject && message.subject.includes('verification code')) {
+            verificationCode = _extract_verification_code(message.subject);
         }
 
+        console.log('Message content:', message.content);
         console.log('Verification links:', verificationLinks);
         console.log('Verification code:', verificationCode);
             
@@ -821,11 +932,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (verificationCode) {
             verificationContent += `
-                <div class="verification-code" onclick="copyToClipboard('${verificationCode}')">
-                    <div class="code-label">Код подтверждения:</div>
-                    <div class="code-value">${verificationCode}</div>
-                    <div class="code-copy">Нажмите, чтобы скопировать</div>
-                </div>`;
+                <div class="verification-code-header">Код подтверждения: <span class="code-value">${verificationCode}</span></div>`;
         }
         
         if (verificationLinks.length > 0) {
@@ -866,6 +973,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="message-meta">
                             <span class="sender">${escapeHtml(message.sender)}</span>
                                 <span class="date">${new Date(message.date).toLocaleString()}</span>
+                                ${verificationCode ? `<div class="verification-code-header">Код подтверждения: <span class="code-value">${verificationCode}</span></div>` : ''}
                             </div>
                         </div>
                         <button type="button" class="close-modal">×</button>
@@ -1018,22 +1126,24 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span>Высокая надежность</span>
                             </div>
                         </div>
-                        <button class="copy-password-button" onclick="copyPasswordAndClose('${password}', this)">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                            </svg>
-                            <span>Скопировать пароль</span>
-                        </button>
-                        <button class="generate-new-password" onclick="generatePassword()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M23 4v6h-6"></path>
-                                <path d="M1 20v-6h6"></path>
-                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
-                                <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
-                            </svg>
-                            <span>Сгенерировать новый</span>
-                        </button>
+                        <div class="action-buttons">
+                            <button class="copy-password-button" onclick="copyPasswordAndClose('${password}', this)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                <span>Скопировать пароль</span>
+                            </button>
+                            <button class="generate-new-password" onclick="generatePassword()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M23 4v6h-6"></path>
+                                    <path d="M1 20v-6h6"></path>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                                    <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+                                </svg>
+                                <span>Сгенерировать новый</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1212,7 +1322,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closePasswordModal(button);
         } catch (error) {
             console.error('Failed to copy:', error);
-            showError('Не удалось скопировать пароль');
+                showError('Не удалось скопировать пароль');
         }
     };
 
@@ -1247,13 +1357,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Очищаем DOM элементы
-            messageList.innerHTML = '<div class="no-messages">Нет сообщений</div>';
-            updateMessageCount(0);
-            
-            // Очищаем интерфейс и показываем загрузку
-            currentEmailElement.textContent = 'Создание новой почты...';
-            currentEmailElement.style.color = 'var(--text-secondary)';
-            showEmailLoading();
+            messageList.innerHTML = `
+                <div class="community-promo">
+                    <div class="promo-content">
+                        <div class="promo-text">
+                            <h2 class="promo-title">Посетите канал по аромотерапии</h2>
+                            <p class="promo-description">Присоединяйтесь и узнайте секреты эфирных масел и аромадиагностики! (На правах рекламы)</p>
+                        </div>
+                        <a href="https://t.me/radmila_essential_oil" target="_blank" rel="noopener noreferrer" class="telegram-button">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215l-16.5 7.5a2.25 2.25 0 0 0 .126 4.17l3.9 1.3v3.882a2.25 2.25 0 0 0 3.898 1.549l2.876-2.876 3.837 2.87a2.242 2.242 0 0 0 3.527-1.376l4.5-16.5a2.25 2.25 0 0 0-2.742-2.734z"></path>
+                            </svg>
+                            Подписаться
+                        </a>
+                    </div>
+                </div>`;
             
             // Удаляем все модальные окна
             document.querySelectorAll('.modal').forEach(modal => modal.remove());
@@ -1422,7 +1540,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <polyline points="12 6 12 12 16 14"></polyline>
                                 </svg>
                                 Действительно: 5:00 минут
-                            </div>
+                        </div>
                             <div class="usage-info">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="10"></circle>
@@ -1430,7 +1548,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <line x1="12" y1="8" x2="12.01" y2="8"></line>
                                 </svg>
                                 Данные действительны для одной регистрации
-                            </div>
+                        </div>
                         </div>
                         <div class="action-buttons">
                             <button class="copy-data-button" onclick="copyToClipboard('${fullName}\\n${login}')">
@@ -1454,9 +1572,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `;
-
+        
         document.body.appendChild(modal);
-
+        
         // Add styles
         const style = document.createElement('style');
         style.textContent = `
@@ -1645,13 +1763,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.closeNameModal = (element) => {
         const modal = element.closest('.modal');
         if (modal) {
-            modal.remove();
+                modal.remove();
             // Remove associated styles
             document.querySelectorAll('style').forEach(style => {
                 if (style.textContent.includes('.name-generation-modal')) {
                     style.remove();
-                }
-            });
+            }
+        });
         }
     };
     
@@ -1659,7 +1777,28 @@ document.addEventListener('DOMContentLoaded', () => {
     window.copyToClipboard = async (text) => {
         try {
             await navigator.clipboard.writeText(text);
-            showSuccess('Скопировано в буфер обмена');
+            
+            // Создаем и показываем красивое уведомление
+            const notification = document.createElement('div');
+            notification.className = 'notification copy-notification';
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                        <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                        <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                    </svg>
+                    <span>Код скопирован</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Удаляем уведомление после анимации
+            setTimeout(() => {
+                notification.style.animation = 'fadeOut 0.5s ease-out forwards';
+                setTimeout(() => notification.remove(), 500);
+            }, 2000);
+            
         } catch (error) {
             console.error('Failed to copy:', error);
             showError('Не удалось скопировать текст');
@@ -1734,47 +1873,4 @@ document.addEventListener('DOMContentLoaded', () => {
             loadMessages(currentEmail, true);
         }
     });
-
-    // Extract verification code from content
-    function _extract_verification_code(content) {
-        if (!content) return null;
-        
-        // Игнорируем даты и годы
-        const datePatterns = [
-            /\d{2}\.\d{2}\.\d{4}/,  // DD.MM.YYYY
-            /\d{4}-\d{2}-\d{2}/,    // YYYY-MM-DD
-            /\d{2}\/\d{2}\/\d{4}/,  // DD/MM/YYYY
-            /20\d{2}/               // Year 20XX
-        ];
-        
-        // Проверяем, не является ли текст датой
-        function isDate(text) {
-            return datePatterns.some(pattern => pattern.test(text));
-        }
-        
-        const patterns = [
-            /verification code[:\s]+([A-Z0-9]{4,8})/i,
-            /confirmation code[:\s]+([A-Z0-9]{4,8})/i,
-            /security code[:\s]+([A-Z0-9]{4,8})/i,
-            /one-time code[:\s]+([A-Z0-9]{4,8})/i,
-            /код подтверждения[:\s]+([A-Z0-9]{4,8})/i,
-            /код[:\s]+([A-Z0-9]{4,8})/i,
-            /pin[:\s]+([0-9]{4,8})/i,
-            /одноразовый код[:\s]+([0-9]{4,8})/i,
-            /temporary code[:\s]+([0-9]{4,8})/i
-        ];
-        
-        for (const pattern of patterns) {
-            const match = content.match(pattern);
-            if (match) {
-                const code = match[1];
-                // Проверяем что это не дата и не год
-                if (!isDate(code)) {
-                    return code;
-                }
-            }
-        }
-        
-        return null;
-    }
 }); 
