@@ -3,7 +3,7 @@ services:
     name: neuromail
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 4
     envVars:
       - key: PYTHON_VERSION
         value: 3.8.0
@@ -11,4 +11,17 @@ services:
         value: 0.0.0.0
       - key: SECRET_KEY
         generateValue: true
-    autoDeploy: true 
+      - key: LOG_LEVEL
+        value: INFO
+      - key: LOG_FILE
+        value: /var/log/app.log
+      - key: DATABASE_URL
+        value: sqlite:///./emailbot.db
+      - key: BROWSER_HEADLESS
+        value: true
+    autoDeploy: true
+    healthCheckPath: /
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1 

@@ -6,24 +6,41 @@
     <title>NeuroMail - Временная почта</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23a855f7' d='M5 21V3h3l8 14V3h3v18h-3l-8-14v14z'/%3E%3C/svg%3E" />
     <!-- Yandex.Metrika counter -->
-    <script type="text/javascript" >
-       (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-       m[i].l=1*new Date();
-       for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-       k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-       (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+    <script type="text/javascript">
+        try {
+            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
 
-       ym(99912095, "init", {
-            clickmap:true,
-            trackLinks:true,
-            accurateTrackBounce:true
-       });
+            ym(99912095, "init", {
+                clickmap:true,
+                trackLinks:true,
+                accurateTrackBounce:true,
+                webvisor:false,
+                triggerEvent:false
+            });
+        } catch(e) {
+            console.warn('Yandex Metrika error:', e);
+        }
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/99912095" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
     <!-- Yandex.RTB -->
-    <script>window.yaContextCb=window.yaContextCb||[]</script>
-    <script src="https://yandex.ru/ads/system/context.js" async></script>
+    <script>
+        try {
+            window.yaContextCb = window.yaContextCb || [];
+            window.addEventListener('error', function(e) {
+                if (e.message.includes('Topics') || e.message.includes('runtime.lastError')) {
+                    e.preventDefault();
+                }
+            });
+        } catch(e) {
+            console.warn('Yandex RTB error:', e);
+        }
+    </script>
+    <script src="https://yandex.ru/ads/system/context.js" async onerror="console.warn('Failed to load Yandex context.js');"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="/static/css/styles.css">

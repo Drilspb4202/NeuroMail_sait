@@ -376,36 +376,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Initial load in silent mode
-        loadMessages(currentEmail, true);
+        let isRefreshing = false;
         
-        // Set fixed 5-second interval
-            autoRefreshInterval = setInterval(() => {
-            if (document.visibilityState === 'visible' && currentEmail) {
-                console.log('Auto-refresh: loading messages');
-                loadMessages(currentEmail, true);
+        async function refresh() {
+            if (isRefreshing || !currentEmail || document.visibilityState !== 'visible') {
+                return;
             }
-        }, 5000); // 5 seconds
+            
+            try {
+                isRefreshing = true;
+                await loadMessages(currentEmail, true);
+            } catch (error) {
+                console.warn('Auto-refresh failed:', error);
+            } finally {
+                isRefreshing = false;
+            }
+        }
+        
+        refresh(); // Initial refresh
+        autoRefreshInterval = setInterval(refresh, 5000);
     }
     
     // Load messages with persistence
     async function loadMessages(email, silent = false) {
-        console.log('Loading messages for:', email);
+        const timeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), 30000)
+        );
         
         try {
             if (!silent) {
                 showEmailLoading();
             }
-
+            
             const messagesContainer = document.querySelector('.messages-container');
             messagesContainer.classList.add('updating');
-
-            const cachedMessages = JSON.parse(localStorage.getItem('messages') || '[]');
             
-            const response = await fetch(`/api/email/messages/${email}`);
-            console.log('Messages response status:', response.status);
+            // Race between the fetch and timeout
+            const response = await Promise.race([
+                fetch(`/api/email/messages/${email}`),
+                timeout
+            ]);
             
             if (!response.ok) {
-                throw new Error('Не удалось загрузить сообщения');
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             
             const newMessages = await response.json();
@@ -416,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Создаем карту существующих сообщений для быстрого поиска
-            const existingMessages = new Map(cachedMessages.map(msg => [msg.message_id, msg]));
+            const existingMessages = new Map(messages.map(msg => [msg.message_id, msg]));
             
             // Обновляем только метаданные сообщений, сохраняя контент
             newMessages.forEach(newMsg => {
@@ -443,12 +456,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 300);
             
         } catch (error) {
-            console.error('Error loading messages:', error);
+            console.warn('Error loading messages:', error);
             if (!silent) {
-            showError(error.message);
+                showError(error.message);
             }
             // On error, use cached messages
-            messages = cachedMessages;
+            messages = JSON.parse(localStorage.getItem('messages') || '[]');
             await renderMessages(messages);
             updateMessageCount(messages.length);
         } finally {

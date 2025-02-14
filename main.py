@@ -38,8 +38,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Configure logging
+logger.remove()  # Remove default handler
+logger.add(
+    settings.log_file,
+    level=settings.log_level,
+    rotation="500 MB",
+    retention="10 days",
+    enqueue=True,
+    backtrace=True,
+    diagnose=True
+)
+
+# Add error logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        logger.info(f"Request: {request.method} {request.url.path} - Status: {response.status_code}")
+        return response
+    except Exception as e:
+        logger.error(f"Request failed: {request.method} {request.url.path} - Error: {str(e)}")
+        raise
+
+# Mount static files with custom config
+app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 
 # Initialize templates
 templates = Jinja2Templates(directory="templates")

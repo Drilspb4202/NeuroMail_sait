@@ -6,32 +6,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', case_sensitive=False)
     
     # API Settings
-    api_host: str = "0.0.0.0"
-    api_port: int = 8000
-    
-    # Security
-    secret_key: str = "your-secret-key-here"
-    
-    # Proxy Settings
-    proxy_enabled: bool = False
-    proxy_list_file: str = "proxies.txt"
-    
-    # Browser Settings
-    browser_headless: bool = True
-    user_agents_file: str = "user_agents.txt"
-    
-    # Email Service Credentials
-    gmail_app_password: Optional[str] = None
-    outlook_app_password: Optional[str] = None
-    
-    # Database
-    database_url: str = "sqlite:///./emailbot.db"
-    
-    # Logging
-    log_level: str = "INFO"
-    log_file: str = "emailbot.log"
-
-    # API Settings
     api_host: str = os.getenv("API_HOST", "0.0.0.0")
     api_port: int = int(os.getenv("API_PORT", "8000"))
     
@@ -55,4 +29,4 @@ class Settings(BaseSettings):
     
     # Logging
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
-    log_file: str = os.getenv("LOG_FILE", "emailbot.log") 
+    log_file: str = os.getenv("LOG_FILE", "app.log") 
