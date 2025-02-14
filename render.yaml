@@ -19,9 +19,12 @@ services:
         value: sqlite:///./emailbot.db
       - key: BROWSER_HEADLESS
         value: true
+      - key: STATIC_FILES_MAX_AGE
+        value: "0"
     autoDeploy: true
     healthCheckPath: /
     disk:
       name: data
       mountPath: /data
-      sizeGB: 1 
+      sizeGB: 1
+    staticPublishPath: ./static 

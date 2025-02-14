@@ -41,6 +41,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add cache control middleware
+@app.middleware("http")
+async def add_cache_control_headers(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/static"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 # Configure logging
 logger.remove()  # Remove default handler
 logger.add(
@@ -65,10 +75,13 @@ async def log_requests(request: Request, call_next):
         raise
 
 # Mount static files with custom config
-app.mount("/static", StaticFiles(directory="static", html=True), name="static")
+app.mount("/static", StaticFiles(directory="static", html=True, check_dir=True), name="static")
 
-# Initialize templates
+# Initialize templates with custom config
 templates = Jinja2Templates(directory="templates")
+templates.env.globals.update({
+    "static_url": lambda path: f"/static/{path}?v={os.path.getmtime(os.path.join('static', path))}"
+})
 
 # Initialize services
 email_creator = EmailCreator(settings)
