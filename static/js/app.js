@@ -751,308 +751,99 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // View message
-    window.viewMessage = async (messageId) => {
-        console.group('View Message Debug');
-        console.log('Message ID:', messageId);
-        
-        if (!messageId) {
-            console.error('Missing message ID');
-            console.groupEnd();
-            showError('Не удалось загрузить сообщение: отсутствует идентификатор');
-            return;
-        }
-
+    async function viewMessage(messageId) {
+        console.group('viewMessage');
         try {
-            // Проверяем кеш
-            const cachedMessages = JSON.parse(localStorage.getItem('messages') || '[]');
+            // Проверяем есть ли сообщение в кеше
+            let message;
             const cachedMessage = cachedMessages.find(msg => msg.message_id === messageId);
             
-            // Если есть кешированное сообщение, показываем его сразу
             if (cachedMessage) {
-                console.log('Found message in cache:', cachedMessage);
-                displayMessage(cachedMessage);
-                
-                // Пытаемся получить свежую версию с сервера
-                try {
-                    const response = await fetch(`/api/email/messages/${currentEmail}/${messageId}`);
-            console.log('Response status:', response.status);
-            
-                    if (response.ok) {
-                        const message = await response.json();
-                        console.log('Message data:', message);
-                        
-                        if (message && (message.content || message.html_content)) {
-                            // Обновляем кеш только если получили новый контент
-                            const messageIndex = cachedMessages.findIndex(msg => msg.message_id === messageId);
-                            if (messageIndex !== -1) {
-                                cachedMessages[messageIndex] = message;
-                            } else {
-                                cachedMessages.push(message);
-                            }
-                            localStorage.setItem('messages', JSON.stringify(cachedMessages));
-                            
-                            // Обновляем отображение только если контент изменился
-                            if (message.content !== cachedMessage.content || 
-                                message.html_content !== cachedMessage.html_content) {
-                                displayMessage(message);
-                            }
-                        }
-                    }
-                    // Игнорируем 404 ошибку если есть кешированное сообщение
-                } catch (error) {
-                    console.error('Error fetching fresh message:', error);
-                    // Продолжаем показывать кешированную версию
-                }
+                message = cachedMessage;
             } else {
                 // Если в кеше нет, пытаемся получить с сервера
                 const response = await fetch(`/api/email/messages/${currentEmail}/${messageId}`);
                 console.log('Response status:', response.status);
                 
-                if (response.ok) {
-            const message = await response.json();
-            console.log('Message data:', message);
-            
-                    if (message) {
-                        // Сохраняем в кеш
-                        cachedMessages.push(message);
-                        localStorage.setItem('messages', JSON.stringify(cachedMessages));
-                        displayMessage(message);
-                    }
-                } else {
+                if (!response.ok) {
                     throw new Error('Сообщение не найдено или было удалено');
                 }
+                
+                message = await response.json();
+                // Сохраняем в кеш
+                cachedMessages.push(message);
+                localStorage.setItem('messages', JSON.stringify(cachedMessages));
             }
-        } catch (error) {
-            console.error('Error in viewMessage:', error);
-            showError(error.message);
-        } finally {
-            console.groupEnd();
-        }
-    };
-    
-    // Extract verification code from content
-    function _extract_verification_code(content) {
-        if (!content) return null;
-        
-        // Игнорируем даты и годы
-        const datePatterns = [
-            /\d{2}\.\d{2}\.\d{4}/,  // DD.MM.YYYY
-            /\d{4}-\d{2}-\d{2}/,    // YYYY-MM-DD
-            /\d{2}\/\d{2}\/\d{4}/,  // DD/MM/YYYY
-            /20\d{2}/               // Year 20XX
-        ];
-        
-        // Проверяем, не является ли текст датой
-        function isDate(text) {
-            return datePatterns.some(pattern => pattern.test(text));
-        }
-        
-        const patterns = [
-            /verification code[:\s]+([A-Z0-9]{4,8})/i,
-            /confirmation code[:\s]+([A-Z0-9]{4,8})/i,
-            /security code[:\s]+([A-Z0-9]{4,8})/i,
-            /one-time code[:\s]+([A-Z0-9]{4,8})/i,
-            /код подтверждения[:\s]+([A-Z0-9]{4,8})/i,
-            /код[:\s]+([A-Z0-9]{4,8})/i,
-            /pin[:\s]+([0-9]{4,8})/i,
-            /одноразовый код[:\s]+([0-9]{4,8})/i,
-            /temporary code[:\s]+([0-9]{4,8})/i,
-            /Your verification code is[:\s]+([A-Z0-9]{4,8})/i,
-            /code is here![:\s]*([A-Z0-9]{4,8})/i,
-            /here!([A-Z0-9]{4,8})/i
-        ];
-        
-        for (const pattern of patterns) {
-            const match = content.match(pattern);
-            if (match) {
-                const code = match[1];
-                // Проверяем что это не дата и не год
-                if (!isDate(code)) {
-                    return code;
-                }
+
+            // Извлекаем верификационные данные
+            let verificationLinks = [];
+            let verificationCode = null;
+            
+            // Извлекаем ссылки верификации
+            if (message.html_content) {
+                verificationLinks = extractLinksFromHtml(message.html_content);
+            } else if (message.content) {
+                verificationLinks = extractLinksFromText(message.content);
             }
-        }
-        
-        // Если не нашли по шаблонам, ищем любой код после фразы "code is here"
-        const codeAfterPhrase = content.match(/code is here!?\s*([^\s\n]+)/i);
-        if (codeAfterPhrase && codeAfterPhrase[1]) {
-            return codeAfterPhrase[1];
-        }
-        
-        return null;
-    }
-
-    // Функция для отображения сообщения
-    function displayMessage(message) {
-        // Извлекаем верификационные данные
-        let verificationLinks = [];
-        let verificationCode = null;
-        
-        // Извлекаем ссылки верификации
-        verificationLinks = processMessageLinks(message);
-        
-        // Извлекаем код верификации
-        if (message.verification_code) {
-            verificationCode = message.verification_code;
-        } else if (message.content) {
-            verificationCode = _extract_verification_code(message.content);
-        } else if (message.subject && message.subject.includes('verification code')) {
-            verificationCode = _extract_verification_code(message.subject);
-        }
-
-        console.log('Message content:', message.content);
-        console.log('Verification links:', verificationLinks);
-        console.log('Verification code:', verificationCode);
             
-            // Подготавливаем контент
-        let messageContent = '';
-        
-        if (!message.html_content && !message.content) {
-            messageContent = `
-                <div class="error-container">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                    </svg>
-                    <h4>Сообщение недоступно</h4>
-                    <p>Возможные причины:</p>
-                    <ul>
-                        <li>Сообщение было удалено с сервера</li>
-                        <li>Истек срок хранения сообщения</li>
-                        <li>Временные проблемы с доступом к серверу</li>
-                    </ul>
-                    <button class="button primary" onclick="refreshMessages()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M23 4v6h-6"></path>
-                            <path d="M1 20v-6h6"></path>
-                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
-                            <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
-                        </svg>
-                        Обновить список сообщений
-                    </button>
-                </div>`;
-        } else {
-            messageContent = message.html_content || message.content;
-        }
+            // Извлекаем код верификации
+            if (message.html_content) {
+                verificationCode = _extract_verification_code(message.html_content);
+            } else if (message.content) {
+                verificationCode = _extract_verification_code(message.content);
+            }
             
+            // Форматируем дату
+            const messageDate = new Date(message.date).toLocaleString('ru-RU', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
             // Создаем модальное окно
             const modal = document.createElement('div');
             modal.className = 'modal';
             
-        // Добавляем верификационные данные в начало контента
-        let verificationContent = '';
-        
-        if (verificationCode) {
-            verificationContent += `
-                <div class="verification-code-header">Код подтверждения: <span class="code-value">${verificationCode}</span></div>`;
-        }
-        
-        if (verificationLinks.length > 0) {
-            verificationContent += `
-                <div class="verification-links-container">
-                    <h4 class="verification-links-title">Ссылки из письма:</h4>
-                    ${verificationLinks.map(link => `
-                        <div class="verification-link-item">
-                            <a href="${escapeHtml(link)}" 
-                               target="_blank" 
-                               class="verification-link-button"
-                               rel="noopener noreferrer">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                <polyline points="15 3 21 3 21 9"></polyline>
-                                <line x1="10" y1="14" x2="21" y2="3"></line>
-                            </svg>
-                                <span>${link.includes('click here') ? 'Нажмите здесь' : 'Перейти по ссылке'}</span>
-                            </a>
-                            <button class="copy-button" onclick="copyToClipboard('${escapeHtml(link)}')" title="Копировать ссылку">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                </svg>
-                        </button>
-                    </div>
-                    `).join('')}
-                </div>`;
+            // Подготавливаем контент
+            let messageContent = message.html_content || message.content || 'Содержимое сообщения недоступно';
+            
+            // Создаем верификационный контент
+            let verificationContent = '';
+            if (verificationLinks.length > 0) {
+                verificationContent += `
+                    <div class="verification-links-container">
+                        <div class="verification-links-title">Ссылки для подтверждения:</div>
+                        <div class="verification-links">
+                            ${verificationLinks.map(link => `
+                                <a href="${escapeHtml(link)}" target="_blank" class="verification-link-button">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                        <polyline points="15 3 21 3 21 9"></polyline>
+                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                    </svg>
+                                    Перейти по ссылке
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>`;
             }
-        
-        messageContent = verificationContent + messageContent;
+            
+            if (verificationCode) {
+                verificationContent += `
+                    <div class="verification-code-container">
+                        <div class="verification-links-title">Код подтверждения:</div>
+                        <div class="verification-code" onclick="copyToClipboard('${escapeHtml(verificationCode)}')">
+                            ${escapeHtml(verificationCode)}
+                        </div>
+                    </div>`;
+            }
             
             modal.innerHTML = `
                 <div class="modal-content">
                     <div class="modal-header">
                         <div class="header-info">
-                        <h3>${escapeHtml(message.subject || 'Без темы')}</h3>
-                            <div class="message-meta">
-                            <span class="sender">${escapeHtml(message.sender)}</span>
-                                <span class="date">${new Date(message.date).toLocaleString()}</span>
-                                ${verificationCode ? `<div class="verification-code-header">Код подтверждения: <span class="code-value">${verificationCode}</span></div>` : ''}
-                            </div>
-                        </div>
-                        <button type="button" class="close-modal">×</button>
-                    </div>
-                    <div class="modal-body">
-                        ${messageContent}
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            console.log('Modal created and added to DOM');
-            
-            // Add click handler to close modal
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal || e.target.classList.contains('close-modal')) {
-                modal.classList.add('closing');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300); // Wait for animation to complete
-            }
-        });
-    }
-    
-    // Delete message
-    window.deleteMessage = async (messageId) => {
-        if (!confirm('Вы уверены, что хотите удалить это сообщение?')) {
-            return;
-        }
-        
-        try {
-            const response = await fetch(`/api/email/messages/${currentEmail}/${messageId}`, {
-                method: 'DELETE'
-            });
-            
-            if (!response.ok) {
-                throw new Error('Не удалось удалить сообщение');
-            }
-            
-            // Refresh messages
-            loadMessages(currentEmail);
-            showSuccess('Сообщение удалено');
-            
-        } catch (error) {
-            console.error('Error:', error);
-            showError(error.message);
-        }
-    };
-    
-    // View message source
-    window.viewSource = async (messageId) => {
-        try {
-            const response = await fetch(`/api/email/messages/${currentEmail}/${messageId}/source`);
-            
-            if (!response.ok) {
-                throw new Error('Не удалось получить исходный код сообщения');
-            }
-            
-            const source = await response.text();
-            
-            // Create modal with source code
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <div class="modal-header">
                         <h3>Исходный код сообщения</h3>
                         <button onclick="this.closest('.modal').remove()">×</button>
                     </div>
