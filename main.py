@@ -22,6 +22,9 @@ from config import Settings
 # Load environment variables
 load_dotenv()
 
+# Initialize settings
+settings = Settings()
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Email Bot API",
@@ -68,7 +71,6 @@ app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Initialize services
-settings = Settings()
 email_creator = EmailCreator(settings)
 email_reader = EmailReader(settings)
 code_extractor = CodeExtractor()
