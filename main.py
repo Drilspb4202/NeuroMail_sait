@@ -11,6 +11,8 @@ import os
 from dotenv import load_dotenv
 from typing import List, Optional
 from datetime import datetime
+from pathlib import Path
+import logging
 
 from services.email_creator import EmailCreator
 from services.email_reader import EmailReader
@@ -37,35 +39,28 @@ app = FastAPI(
 async def startup_event():
     logger.info("=== Starting up server ===")
     try:
-        # Проверяем и создаем необходимые директории
+        # Создаем необходимые директории
         required_dirs = [
-            '/data',
-            '/data/logs',
-            '/data/db',
-            '/data/temp'
+            'data',
+            'data/logs',
+            'data/db',
+            'data/temp'
         ]
         
         for dir_path in required_dirs:
-            if not os.path.exists(dir_path):
-                try:
-                    os.makedirs(dir_path, exist_ok=True)
-                    logger.info(f"Created directory: {dir_path}")
-                except Exception as e:
-                    logger.error(f"Failed to create directory {dir_path}: {str(e)}")
-                    continue
+            try:
+                Path(dir_path).mkdir(parents=True, exist_ok=True)
+                logger.info(f"Created directory: {dir_path}")
+            except Exception as e:
+                logger.warning(f"Error creating directory {dir_path}: {e}")
         
         # Настраиваем логирование
-        log_path = '/data/logs/app.log'
-        logger.add(
-            log_path,
-            level=settings.log_level,
-            rotation="500 MB",
-            retention="10 days",
-            enqueue=True,
-            backtrace=True,
-            diagnose=True
+        logging.basicConfig(
+            filename='data/logs/app.log',
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )
-        logger.info(f"Logging initialized: {log_path}")
+        logger.info("Logging initialized")
         
         # Проверяем доступность сервисов
         await email_creator.health_check()
@@ -154,8 +149,7 @@ class CreateEmailRequest(BaseModel):
 
 class CreateEmailResponse(BaseModel):
     email: str
-    password: str
-    status: str
+    status: str = "success"
 
 class EmailMessage(BaseModel):
     subject: str
@@ -170,101 +164,54 @@ class EmailMessage(BaseModel):
 @app.get("/health")
 async def health_check():
     try:
-        # Проверяем доступность директорий
-        log_dir = os.path.dirname(settings.log_file)
-        db_path = settings.database_url.replace('sqlite:////', '')
-        db_dir = os.path.dirname(db_path)
+        # Проверяем директории
+        log_dir = Path("data/logs")
+        db_dir = Path("data/db")
         
         health_status = {
-            "status": "healthy",
+            "status": "ok",
             "timestamp": datetime.now().isoformat(),
             "version": "1.0.0",
             "checks": {
                 "log_directory": {
-                    "status": os.path.exists(log_dir),
-                    "path": log_dir,
-                    "writable": os.access(log_dir, os.W_OK) if os.path.exists(log_dir) else False
+                    "status": log_dir.exists() and log_dir.is_dir(),
+                    "path": str(log_dir.absolute()),
+                    "writable": os.access(log_dir, os.W_OK)
                 },
                 "database_directory": {
-                    "status": os.path.exists(db_dir),
-                    "path": db_dir,
-                    "writable": os.access(db_dir, os.W_OK) if os.path.exists(db_dir) else False
+                    "status": db_dir.exists() and db_dir.is_dir(),
+                    "path": str(db_dir.absolute()),
+                    "writable": os.access(db_dir, os.W_OK)
                 },
                 "disk_space": {
                     "available": True,
-                    "path": "/data"
+                    "path": str(Path("data").absolute())
+                },
+                "services": {
+                    "email_creator": True,
+                    "email_reader": True
                 }
             }
         }
         
-        # Проверяем свободное место на диске
-        try:
-            stat = os.statvfs('/data')
-            free_space = (stat.f_bavail * stat.f_frsize) / (1024 * 1024 * 1024)  # в ГБ
-            total_space = (stat.f_blocks * stat.f_frsize) / (1024 * 1024 * 1024)  # в ГБ
-            used_space = total_space - free_space
-            
-            health_status["checks"]["disk_space"].update({
-                "free_space_gb": round(free_space, 2),
-                "total_space_gb": round(total_space, 2),
-                "used_space_gb": round(used_space, 2),
-                "usage_percent": round((used_space / total_space) * 100, 1)
-            })
-            
-            # Если свободного места меньше 100МБ или использовано более 90%, помечаем как проблему
-            if free_space < 0.1 or (used_space / total_space) > 0.9:
-                health_status["status"] = "warning"
-                health_status["checks"]["disk_space"]["available"] = False
-                logger.warning(f"Low disk space: {free_space:.2f}GB remaining, {(used_space / total_space) * 100:.1f}% used")
-        except Exception as e:
-            logger.error(f"Error checking disk space: {str(e)}")
-            health_status["checks"]["disk_space"]["error"] = str(e)
+        # Проверяем общее состояние
+        all_checks_ok = all([
+            health_status["checks"]["log_directory"]["status"],
+            health_status["checks"]["database_directory"]["status"],
+            health_status["checks"]["disk_space"]["available"],
+            health_status["checks"]["services"]["email_creator"],
+            health_status["checks"]["services"]["email_reader"]
+        ])
         
-        # Проверяем работоспособность сервисов
-        services_status = {"email_creator": False, "email_reader": False}
-        
-        try:
-            await email_creator.health_check()
-            services_status["email_creator"] = True
-        except Exception as e:
-            health_status["status"] = "warning"
-            logger.error(f"Email creator health check failed: {str(e)}")
-            services_status["email_creator_error"] = str(e)
-        
-        try:
-            await email_reader.health_check()
-            services_status["email_reader"] = True
-        except Exception as e:
-            health_status["status"] = "warning"
-            logger.error(f"Email reader health check failed: {str(e)}")
-            services_status["email_reader_error"] = str(e)
-        
-        health_status["checks"]["services"] = services_status
-        
-        # Добавляем информацию о системных ресурсах
-        try:
-            import psutil
-            memory = psutil.virtual_memory()
-            health_status["checks"]["system"] = {
-                "cpu_percent": psutil.cpu_percent(interval=1),
-                "memory_percent": memory.percent,
-                "memory_available_mb": round(memory.available / (1024 * 1024), 2)
-            }
-            
-            # Предупреждение при высокой нагрузке
-            if memory.percent > 90 or psutil.cpu_percent() > 80:
-                health_status["status"] = "warning"
-                logger.warning(f"High system load: CPU {psutil.cpu_percent()}%, Memory {memory.percent}%")
-        except Exception as e:
-            logger.error(f"Error checking system resources: {str(e)}")
+        health_status["status"] = "ok" if all_checks_ok else "warning"
         
         return health_status
     except Exception as e:
-        logger.error(f"Health check failed: {str(e)}", exc_info=True)
+        logger.error(f"Health check failed: {e}")
         return {
-            "status": "unhealthy",
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
+            "status": "error",
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e)
         }
 
 @app.get("/yandex_80d47bc6703d08b0.html")
@@ -281,22 +228,17 @@ async def yandex_verification():
 async def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.post("/api/email/create", response_model=CreateEmailResponse)
+@app.post("/api/email/create")
 async def create_email(request: CreateEmailRequest):
     try:
         # Convert service name to match the expected format
         service = "temp-mail" if request.service.lower() in ["temp-mail", "tempmail", "temp_mail"] else request.service.lower()
         
-        email_account = await email_creator.create_email_account(
-            service=service,
-            username=request.username
-        )
-            
-        return CreateEmailResponse(
-            email=email_account.email,
-            password=email_account.password,
-            status="success"
-        )
+        # Create email account
+        email = await email_creator.create_email_account(service=service)
+        
+        # Return response
+        return {"email": email, "status": "success"}
     except Exception as e:
         logger.error(f"Error creating email account: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

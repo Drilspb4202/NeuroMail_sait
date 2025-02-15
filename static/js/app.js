@@ -123,25 +123,25 @@ function addTooltips() {
 }
 
 // Модифицируем существующую функцию createEmail
-async function createEmail() {
-    showLoading();
+    async function createEmail() {
+            showLoading();
     try {
-        const response = await fetch('/api/email/create', {
-            method: 'POST',
-            headers: {
+            const response = await fetch('/api/email/create', {
+                method: 'POST',
+                headers: {
                 'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                service: 'temp-mail'
+                },
+                body: JSON.stringify({
+                    service: 'temp-mail'
             })
-        });
-
-        if (!response.ok) {
+            });
+            
+            if (!response.ok) {
             throw new Error('Ошибка создания почты');
-        }
-
+            }
+            
         const data = await response.json();
-        currentEmail = data.email;
+            currentEmail = data.email;
         
         // Обновляем отображение email
         const emailElement = document.getElementById('currentEmail');
@@ -151,15 +151,15 @@ async function createEmail() {
         
         // Запускаем проверку сообщений
         await loadMessages(currentEmail);
-        startAutoRefresh();
-        
+            startAutoRefresh();
+            
         showSuccess('Почта успешно создана');
-    } catch (error) {
+        } catch (error) {
         console.error('Error creating email:', error);
         showError('Ошибка при создании почты');
-    } finally {
-        hideLoading();
-    }
+        } finally {
+            hideLoading();
+        }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1492,10 +1492,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create new email account
     window.createNewEmail = async () => {
         try {
-            // Очищаем все данные из localStorage
-            localStorage.clear();
+            showEmailLoading();
             
-            // Очищаем все переменные
+            // Удаляем старую почту если она существует
+            const oldEmail = currentEmail;
+            if (oldEmail) {
+                try {
+                    const deleteResponse = await fetch(`/api/email/delete/${oldEmail}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (!deleteResponse.ok) {
+                        console.warn('Failed to delete old email:', await deleteResponse.text());
+                    }
+                } catch (error) {
+                    console.error('Error deleting old email:', error);
+                }
+            }
+
+            // Очищаем все данные
+            localStorage.clear();
             currentEmail = null;
             messages = [];
             
@@ -1506,39 +1522,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Очищаем DOM элементы
-            messageList.innerHTML = `
-                <div class="community-promo">
-                    <div class="promo-content">
-                        <div class="promo-text">
-                            <h2 class="promo-title">Посетите канал по аромотерапии</h2>
-                            <p class="promo-description">Присоединяйтесь и узнайте секреты эфирных масел и аромадиагностики! (На правах рекламы)</p>
-                        </div>
-                        <a href="https://t.me/radmila_essential_oil" target="_blank" rel="noopener noreferrer" class="telegram-button">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215l-16.5 7.5a2.25 2.25 0 0 0 .126 4.17l3.9 1.3v3.882a2.25 2.25 0 0 0 3.898 1.549l2.876-2.876 3.837 2.87a2.242 2.242 0 0 0 3.527-1.376l4.5-16.5a2.25 2.25 0 0 0-2.742-2.734z"></path>
-                            </svg>
-                            Подписаться
-                        </a>
-                    </div>
-                </div>`;
+            messageList.innerHTML = '';
+            updateMessageCount(0);
             
-            // Удаляем все модальные окна
-            document.querySelectorAll('.modal').forEach(modal => modal.remove());
-            
-            // Удаляем все уведомления
-            document.querySelectorAll('.notification, .error-message, .success-message').forEach(notification => notification.remove());
-            
-            // Удаляем старую почту если она существует
-            const oldEmail = localStorage.getItem('currentEmail');
-            if (oldEmail) {
-                try {
-                    await fetch(`/api/email/delete/${oldEmail}`, {
-                        method: 'DELETE'
-                    });
-                } catch (error) {
-                    console.error('Error deleting old email:', error);
-                }
-            }
+            // Удаляем все модальные окна и уведомления
+            document.querySelectorAll('.modal, .notification, .error-message, .success-message').forEach(el => el.remove());
             
             // Пытаемся создать новую почту
             const response = await fetch('/api/email/create', {
@@ -1551,34 +1539,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }),
             });
             
-            console.log('Response status:', response.status);
             const data = await response.json();
-            console.log('Response data:', data);
             
             if (!response.ok) {
-                // Создаем модальное окно с сообщением об ошибке
-                const modal = document.createElement('div');
-                modal.className = 'modal';
-                modal.innerHTML = `
-                    <div class="modal-content" style="max-width: 400px;">
-                        <div class="modal-header">
-                            <h3>Сервис временно недоступен</h3>
-                            <button type="button" class="close-modal">×</button>
-                        </div>
-                        <div class="modal-body">
-                            <p>Сервис временно перегружен. Пожалуйста, подождите несколько минут и попробуйте снова.</p>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-                
-                // Добавляем обработчик для закрытия
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal || e.target.classList.contains('close-modal')) {
-                        modal.remove();
-                    }
-                });
-                
                 currentEmailElement.textContent = 'Сервис временно перегружен';
                 currentEmailElement.style.color = 'var(--danger-color)';
                 throw new Error(data.detail || 'Не удалось создать почтовый ящик');

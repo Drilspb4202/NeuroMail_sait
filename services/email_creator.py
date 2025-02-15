@@ -18,7 +18,7 @@ class EmailCreator:
     def __init__(self, settings: Settings):
         self.settings = settings
         self.accounts: List[EmailAccount] = []
-        self.client = httpx.AsyncClient(timeout=30.0)  # Увеличиваем timeout
+        self.client = httpx.AsyncClient(timeout=30.0)
         
     async def __del__(self):
         await self.client.aclose()
@@ -28,58 +28,54 @@ class EmailCreator:
         return ''.join(random.choice(chars) for _ in range(length))
     
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-    async def create_email_account(self, service: str, username: Optional[str] = None) -> EmailAccount:
+    async def create_email_account(self, service: str, username: Optional[str] = None) -> str:
         if service.lower() != "temp-mail":
-            raise ValueError("Only temp-mail service is supported")
+            raise ValueError("Поддерживается только сервис temp-mail")
             
         try:
             if username:
-                return await self._create_custom_temp_mail(username)
-            return await self._create_temp_mail()
+                account = await self._create_custom_temp_mail(username)
+            else:
+                account = await self._create_temp_mail()
+            return account.email
         except Exception as e:
-            logger.error(f"Failed to create email account: {str(e)}")
-            # Пробуем альтернативный сервис
-            return await self._create_alternative_temp_mail()
+            logger.error(f"Ошибка создания почты: {str(e)}")
+            raise Exception("Не удалось создать почту. Пожалуйста, попробуйте позже.")
     
     async def _create_temp_mail(self) -> EmailAccount:
-        try:
-            for attempt in range(3):  # Попытки с текущим сервисом
-                try:
-                    response = await self.client.get(self.GET_MAIL_URL)
-                    response.raise_for_status()
-                    
-                    data = response.json()
-                    if not data.get("mail"):
-                        raise Exception("No email address in response")
-                    
-                    email = data["mail"]
-                    password = self._generate_password()
-                    
-                    account = EmailAccount(
-                        email=email,
-                        password=password,
-                        service="temp-mail"
-                    )
-                    
-                    self.accounts.append(account)
-                    return account
-                except httpx.HTTPError as he:
-                    logger.warning(f"HTTP error on attempt {attempt + 1}: {str(he)}")
-                    if attempt < 2:  # Если это не последняя попытка
-                        await asyncio.sleep(2 ** attempt)  # Экспоненциальная задержка
-                    continue
-                except Exception as e:
-                    logger.error(f"Error on attempt {attempt + 1}: {str(e)}")
-                    if attempt < 2:
-                        await asyncio.sleep(2 ** attempt)
-                    continue
-            
-            # Если все попытки не удались, пробуем альтернативный сервис
-            return await self._create_alternative_temp_mail()
+        for attempt in range(3):
+            try:
+                response = await self.client.get(self.GET_MAIL_URL)
+                response.raise_for_status()
                 
-        except Exception as e:
-            logger.error(f"Error creating temp mail account: {str(e)}")
-            raise
+                data = response.json()
+                if not data.get("mail"):
+                    raise Exception("Сервис не вернул адрес почты")
+                
+                email = data["mail"]
+                password = self._generate_password()
+                
+                account = EmailAccount(
+                    email=email,
+                    password=password,
+                    service="temp-mail"
+                )
+                
+                self.accounts.append(account)
+                return account
+                
+            except httpx.HTTPError as he:
+                logger.warning(f"Ошибка HTTP на попытке {attempt + 1}: {str(he)}")
+                if attempt < 2:
+                    await asyncio.sleep(2 ** attempt)
+                continue
+            except Exception as e:
+                logger.error(f"Ошибка на попытке {attempt + 1}: {str(e)}")
+                if attempt < 2:
+                    await asyncio.sleep(2 ** attempt)
+                continue
+        
+        raise Exception("Сервис временно недоступен. Пожалуйста, попробуйте позже.")
             
     async def _create_custom_temp_mail(self, username: str) -> EmailAccount:
         try:
@@ -89,7 +85,7 @@ class EmailCreator:
             
             data = response.json()
             if not data.get("mail"):
-                raise Exception("No email address in response")
+                raise Exception("Сервис не вернул адрес почты")
             
             email = data["mail"]
             password = self._generate_password()
@@ -104,8 +100,8 @@ class EmailCreator:
             return account
                 
         except Exception as e:
-            logger.error(f"Error creating custom temp mail account: {str(e)}")
-            raise
+            logger.error(f"Ошибка создания кастомной почты: {str(e)}")
+            raise Exception("Не удалось создать почту с указанным именем. Пожалуйста, попробуйте другое имя или позже.")
     
     async def _create_alternative_temp_mail(self) -> EmailAccount:
         """Создание почты через альтернативный сервис"""
