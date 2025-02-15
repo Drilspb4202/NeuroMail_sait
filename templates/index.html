@@ -53,6 +53,10 @@
                 <h1 class="neon-title">NeuroMail</h1>
                 <p class="header-subtitle">Революция в мире электронной почты. Автоматизация, интеллект и простота для вашего совершенного рабочего дня.</p>
                 <div class="status-bar">
+                    <div class="server-status">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Проверка сервера...</span>
+                    </div>
                     <div class="message-counter" id="messageCounter">
                         <span id="messageCount">0 писем</span>
                     </div>
@@ -77,7 +81,7 @@
                     <div class="email-info">
                         <span class="email-label">Ваш email:</span>
                         <span class="email-address" id="currentEmail"></span>
-                        <div class="email-loading" id="emailLoading">
+                        <div class="email-loading" id="emailLoading" style="display: none;">
                             <div class="spinner"></div>
                             <span>Проверка почты...</span>
                         </div>

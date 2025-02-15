@@ -1,4 +1,51 @@
 let serverHealthCheckInterval;
+let currentEmail = null;
+
+// Функции для управления индикатором загрузки
+function showLoading() {
+    const loadingElement = document.getElementById('loading');
+    if (loadingElement) {
+        loadingElement.style.display = 'none';
+    }
+}
+
+function hideLoading() {
+    const loadingElement = document.getElementById('loading');
+    if (loadingElement) {
+        loadingElement.style.display = 'none';
+    }
+}
+
+function showEmailLoading() {
+    const emailLoading = document.getElementById('emailLoading');
+    if (emailLoading) {
+        emailLoading.style.display = 'none';
+    }
+}
+
+function hideEmailLoading() {
+    const emailLoading = document.getElementById('emailLoading');
+    if (emailLoading) {
+        emailLoading.style.display = 'none';
+    }
+}
+
+// Функции для отображения сообщений об ошибках и успехе
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.textContent = message;
+    document.body.appendChild(errorDiv);
+    setTimeout(() => errorDiv.remove(), 5000);
+}
+
+function showSuccess(message) {
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success-message';
+    successDiv.textContent = message;
+    document.body.appendChild(successDiv);
+    setTimeout(() => successDiv.remove(), 5000);
+}
 
 // Функция для проверки состояния сервера
 async function checkServerHealth() {
@@ -6,22 +53,34 @@ async function checkServerHealth() {
         const response = await fetch('/health');
         const data = await response.json();
         
+        // Обновляем статус только если элементы существуют
         const statusDot = document.querySelector('.status-dot');
         const statusText = document.querySelector('.status-text');
         
-        // Всегда показываем зеленый статус
-        statusDot.className = 'status-dot green';
-        statusText.textContent = 'Сервер работает';
+        if (statusDot && statusText) {
+            if (data.status === 'ok') {
+                statusDot.className = 'status-dot green';
+                statusText.textContent = 'Сервер работает';
+            } else {
+                statusDot.className = 'status-dot yellow';
+                statusText.textContent = 'Проверка сервера...';
+            }
+        }
         
-        updateServiceStatus(data);
+        return data.status === 'ok';
     } catch (error) {
-        console.error('Health check failed:', error);
-        // Даже при ошибке показываем, что сервер работает
+        console.warn('Health check failed:', error);
+        
+        // Обновляем статус только если элементы существуют
         const statusDot = document.querySelector('.status-dot');
         const statusText = document.querySelector('.status-text');
         
-        statusDot.className = 'status-dot green';
-        statusText.textContent = 'Сервер работает';
+        if (statusDot && statusText) {
+            statusDot.className = 'status-dot red';
+            statusText.textContent = 'Ошибка подключения';
+        }
+        
+        return false;
     }
 }
 
@@ -123,8 +182,8 @@ function addTooltips() {
 }
 
 // Модифицируем существующую функцию createEmail
-    async function createEmail() {
-            showLoading();
+async function createEmail() {
+    showLoading();
     try {
             const response = await fetch('/api/email/create', {
                 method: 'POST',
@@ -137,7 +196,8 @@ function addTooltips() {
             });
             
             if (!response.ok) {
-            throw new Error('Ошибка создания почты');
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Ошибка создания почты');
             }
             
         const data = await response.json();
@@ -156,7 +216,7 @@ function addTooltips() {
         showSuccess('Почта успешно создана');
         } catch (error) {
         console.error('Error creating email:', error);
-        showError('Ошибка при создании почты');
+        showError(error.message || 'Ошибка при создании почты');
         } finally {
             hideLoading();
         }
@@ -388,7 +448,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingIndicator = document.getElementById('loading');
     const emailLoadingIndicator = document.getElementById('emailLoading');
     
-    let currentEmail = localStorage.getItem('currentEmail');
     let messages = JSON.parse(localStorage.getItem('messages') || '[]')
         .sort((a, b) => new Date(b.date) - new Date(a.date));
     let autoRefreshInterval = null;
@@ -1916,60 +1975,6 @@ document.addEventListener('DOMContentLoaded', () => {
             showError('Не удалось скопировать текст');
         }
     };
-    
-    // Show/hide loading indicators
-    function showLoading() {
-        loadingIndicator.classList.add('active');
-    }
-    
-    function hideLoading() {
-        loadingIndicator.classList.remove('active');
-    }
-    
-    function showEmailLoading() {
-        emailLoadingIndicator.style.display = 'inline-flex';
-    }
-
-    function hideEmailLoading() {
-        emailLoadingIndicator.style.display = 'none';
-    }
-    
-    // Utility functions
-    function showError(message) {
-        console.error('Error message:', message);
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-message';
-        errorDiv.textContent = message;
-        
-        // Удаляем предыдущие сообщения об ошибках
-        const existingErrors = document.querySelectorAll('.error-message');
-        existingErrors.forEach(error => error.remove());
-        
-        // Добавляем новое сообщение об ошибке
-        const container = document.querySelector('.messages-container');
-        container.insertAdjacentElement('beforebegin', errorDiv);
-        
-        // Автоматически удаляем сообщение через 5 секунд
-        setTimeout(() => errorDiv.remove(), 5000);
-    }
-    
-    function showSuccess(message) {
-        const successDiv = document.createElement('div');
-        successDiv.className = 'success-message';
-        successDiv.style.whiteSpace = 'pre-line'; // Поддержка переносов строк
-        successDiv.textContent = message;
-        
-        // Удаляем предыдущие сообщения об успехе
-        const existingSuccess = document.querySelectorAll('.success-message');
-        existingSuccess.forEach(success => success.remove());
-        
-        // Добавляем новое сообщение об успехе
-        const container = document.querySelector('.messages-container');
-        container.insertAdjacentElement('beforebegin', successDiv);
-        
-        // Автоматически удаляем сообщение через 5 секунд
-        setTimeout(() => successDiv.remove(), 5000);
-    }
     
     // Cleanup on page unload
     window.addEventListener('beforeunload', () => {

@@ -20,9 +20,27 @@ class EmailCreator:
         self.accounts: List[EmailAccount] = []
         self.client = httpx.AsyncClient(timeout=30.0)
         
-    async def __del__(self):
-        await self.client.aclose()
+    def __del__(self):
+        # Закрываем клиент синхронно
+        if self.client and not self.client.is_closed:
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    loop.create_task(self.client.aclose())
+                else:
+                    loop.run_until_complete(self.client.aclose())
+            except Exception as e:
+                logger.error(f"Error in EmailCreator cleanup: {e}")
         
+    async def cleanup(self):
+        """Метод для правильной очистки ресурсов"""
+        if self.client and not self.client.is_closed:
+            try:
+                await self.client.aclose()
+                logger.info("EmailCreator resources cleaned up")
+            except Exception as e:
+                logger.error(f"Error cleaning up EmailCreator: {e}")
+    
     def _generate_password(self, length: int = 12) -> str:
         chars = string.ascii_letters + string.digits + "!@#$%^&*"
         return ''.join(random.choice(chars) for _ in range(length))
@@ -110,3 +128,42 @@ class EmailCreator:
     
     async def list_accounts(self) -> List[EmailAccount]:
         return self.accounts 
+
+    async def email_exists(self, email: str) -> bool:
+        """Проверяет существование email аккаунта"""
+        try:
+            # Проверяем в локальном списке
+            if any(account.email == email for account in self.accounts):
+                return True
+                
+            # Пытаемся получить информацию о почте
+            response = await self.client.get(
+                f"{self.BASE_URL}/mailbox/{email}"
+            )
+            return response.status_code == 200
+            
+        except Exception as e:
+            logger.error(f"Error checking email existence: {e}")
+            return False
+            
+    async def delete_email_account(self, email: str) -> bool:
+        """Удаляет email аккаунт"""
+        try:
+            # Удаляем из локального списка
+            self.accounts = [acc for acc in self.accounts if acc.email != email]
+            
+            # Отправляем запрос на удаление
+            response = await self.client.delete(
+                f"{self.BASE_URL}/mailbox/{email}"
+            )
+            
+            if response.status_code == 200:
+                logger.info(f"Successfully deleted email account: {email}")
+                return True
+            else:
+                logger.error(f"Failed to delete email account: {email}, status: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error deleting email account: {e}")
+            return False 

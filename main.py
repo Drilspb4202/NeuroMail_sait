@@ -228,20 +228,55 @@ async def yandex_verification():
 async def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.post("/api/email/create")
+@app.post("/api/email/create", response_model=CreateEmailResponse)
 async def create_email(request: CreateEmailRequest):
     try:
-        # Convert service name to match the expected format
-        service = "temp-mail" if request.service.lower() in ["temp-mail", "tempmail", "temp_mail"] else request.service.lower()
+        # Валидация и нормализация service
+        service = request.service.lower().replace("_", "-").strip()
+        if service not in ["temp-mail", "tempmail"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Поддерживается только сервис temp-mail"
+            )
         
-        # Create email account
-        email = await email_creator.create_email_account(service=service)
+        logger.info(f"Creating new email account with service: {service}")
         
-        # Return response
-        return {"email": email, "status": "success"}
+        # Создание email аккаунта с обработкой ошибок
+        try:
+            email = await email_creator.create_email_account(
+                service="temp-mail",
+                username=request.username
+            )
+        except Exception as e:
+            logger.error(f"Failed to create email account: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail="Не удалось создать почтовый ящик. Сервис временно недоступен."
+            )
+            
+        if not email:
+            logger.error("Email creation failed - no email returned")
+            raise HTTPException(
+                status_code=500,
+                detail="Не удалось создать почтовый ящик. Пожалуйста, попробуйте позже."
+            )
+            
+        logger.info(f"Successfully created email account: {email}")
+        
+        # Возвращаем ответ
+        return CreateEmailResponse(
+            email=email,
+            status="success"
+        )
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error creating email account: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Unexpected error during email creation")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Внутренняя ошибка сервера: {str(e)}"
+        )
 
 @app.get("/api/email/list", response_model=List[EmailAccount])
 async def list_emails():
@@ -309,11 +344,13 @@ async def get_message(email: str, message_id: str):
         
         # Ищем сообщение по ID
         message = next((msg for msg in messages if str(msg.message_id) == str(message_id)), None)
-        logger.debug(f"Message found: {message is not None}")
         
         if not message:
-            logger.error(f"Message {message_id} not found")
-            raise HTTPException(status_code=404, detail="Message not found")
+            logger.warning(f"Message {message_id} not found for email {email}")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Сообщение с ID {message_id} не найдено"
+            )
             
         logger.info(f"Returning message: {message.subject}")
         return EmailMessage(
@@ -322,14 +359,51 @@ async def get_message(email: str, message_id: str):
             date=message.date,
             content=message.content,
             message_id=message.message_id,
-            html_content=message.html_content
+            html_content=message.html_content,
+            verification_code=code_extractor.extract_code(message.content),
+            verification_link=code_extractor.extract_link(message.content)
         )
         
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error getting message: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail="Произошла ошибка при получении сообщения"
+        )
+
+@app.delete("/api/email/delete/{email}")
+async def delete_email(email: str):
+    try:
+        logger.info(f"Attempting to delete email account: {email}")
+        
+        # Проверяем существование email
+        if not await email_creator.email_exists(email):
+            logger.warning(f"Email account not found: {email}")
+            # Возвращаем 200 даже если почта не найдена, так как результат тот же - почты нет
+            return {"status": "success", "message": "Email account deleted or not found"}
+            
+        # Удаляем почту
+        success = await email_creator.delete_email_account(email)
+        if not success:
+            logger.error(f"Failed to delete email account: {email}")
+            raise HTTPException(
+                status_code=500,
+                detail="Не удалось удалить почтовый ящик"
+            )
+            
+        logger.info(f"Successfully deleted email account: {email}")
+        return {"status": "success", "message": "Email account deleted"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error deleting email account: {email}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при удалении почтового ящика: {str(e)}"
+        )
 
 if __name__ == "__main__":
     logger.add(
