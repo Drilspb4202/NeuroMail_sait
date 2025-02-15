@@ -1,0 +1,16 @@
+selenium==4.16.0
+undetected-chromedriver>=3.5.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+python-dotenv==1.0.0
+imap-tools==1.5.0
+beautifulsoup4==4.12.2
+pydantic>=2.5.0
+pydantic-settings==2.0.3
+loguru==0.7.2
+httpx==0.25.1
+python-multipart==0.0.6
+jinja2==3.1.2
+starlette==0.27.0
+setuptools>=69.0.0
+tenacity==8.2.3 

@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Allow: /sitemap.xml
+Disallow: /api/
+Disallow: /static/js/
+Disallow: /static/css/
+
+Sitemap: https://neuromail-sait.onrender.com/sitemap.xml 

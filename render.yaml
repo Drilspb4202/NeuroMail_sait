@@ -1,0 +1,55 @@
+services:
+  - type: web
+    name: neuromail
+    env: python
+    buildCommand: |
+      pip install -r requirements.txt
+      pip install psutil
+    startCommand: |
+      mkdir -p /data /data/logs /data/db /data/temp
+      chmod -R 755 /data
+      touch /data/logs/app.log
+      chmod 644 /data/logs/app.log
+      uvicorn main:app --host 0.0.0.0 --port $PORT --workers 4 --log-level info --timeout-keep-alive 75 --limit-max-requests 10000 --proxy-headers --forwarded-allow-ips='*' --reload-dir /data --reload-delay 5
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.8.0
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: LOG_LEVEL
+        value: INFO
+      - key: LOG_FILE
+        value: /data/logs/app.log
+      - key: DATABASE_URL
+        value: sqlite:////data/db/emailbot.db
+      - key: BROWSER_HEADLESS
+        value: true
+      - key: STATIC_FILES_MAX_AGE
+        value: "0"
+      - key: WORKERS_PER_CORE
+        value: "2"
+      - key: MAX_WORKERS
+        value: "4"
+      - key: GRACEFUL_TIMEOUT
+        value: "30"
+      - key: WEB_CONCURRENCY
+        value: "4"
+      - key: KEEP_ALIVE
+        value: "75"
+      - key: MAX_REQUESTS
+        value: "10000"
+      - key: MAX_REQUESTS_JITTER
+        value: "2000"
+    autoDeploy: true
+    healthCheckPath: /health
+    healthCheckTimeout: 30
+    healthCheckInterval: 15
+    minInstances: 1
+    maxInstances: 1
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+    staticPublishPath: ./static 
