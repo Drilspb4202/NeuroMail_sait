@@ -1,11 +1,12 @@
 let serverHealthCheckInterval;
 let currentEmail = null;
+let autoRefreshInterval;
 
 // Функции для управления индикатором загрузки
 function showLoading() {
     const loadingElement = document.getElementById('loading');
     if (loadingElement) {
-        loadingElement.style.display = 'none';
+        loadingElement.style.display = 'flex';
     }
 }
 
@@ -19,7 +20,7 @@ function hideLoading() {
 function showEmailLoading() {
     const emailLoading = document.getElementById('emailLoading');
     if (emailLoading) {
-        emailLoading.style.display = 'none';
+        emailLoading.style.display = 'flex';
     }
 }
 
@@ -45,6 +46,37 @@ function showSuccess(message) {
     successDiv.textContent = message;
     document.body.appendChild(successDiv);
     setTimeout(() => successDiv.remove(), 5000);
+}
+
+// Функции для работы с кешем
+function saveEmailToCache(email) {
+    try {
+        localStorage.setItem('currentEmail', email);
+        localStorage.setItem('emailCreatedAt', new Date().toISOString());
+    } catch (error) {
+        console.warn('Failed to save email to cache:', error);
+    }
+}
+
+function getEmailFromCache() {
+    try {
+        return {
+            email: localStorage.getItem('currentEmail'),
+            createdAt: localStorage.getItem('emailCreatedAt')
+        };
+    } catch (error) {
+        console.warn('Failed to get email from cache:', error);
+        return { email: null, createdAt: null };
+    }
+}
+
+function clearEmailCache() {
+    try {
+        localStorage.removeItem('currentEmail');
+        localStorage.removeItem('emailCreatedAt');
+    } catch (error) {
+        console.warn('Failed to clear email cache:', error);
+    }
 }
 
 // Функция для проверки состояния сервера
@@ -181,27 +213,30 @@ function addTooltips() {
     });
 }
 
-// Модифицируем существующую функцию createEmail
+// Модифицируем функцию createEmail
 async function createEmail() {
     showLoading();
     try {
-            const response = await fetch('/api/email/create', {
-                method: 'POST',
-                headers: {
+        const response = await fetch('/api/email/create', {
+            method: 'POST',
+            headers: {
                 'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    service: 'temp-mail'
+            },
+            body: JSON.stringify({
+                service: 'temp-mail'
             })
-            });
-            
-            if (!response.ok) {
+        });
+        
+        if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.detail || 'Ошибка создания почты');
-            }
-            
+        }
+        
         const data = await response.json();
-            currentEmail = data.email;
+        currentEmail = data.email;
+        
+        // Сохраняем email в кеш
+        saveEmailToCache(currentEmail);
         
         // Обновляем отображение email
         const emailElement = document.getElementById('currentEmail');
@@ -211,16 +246,52 @@ async function createEmail() {
         
         // Запускаем проверку сообщений
         await loadMessages(currentEmail);
-            startAutoRefresh();
-            
+        startAutoRefresh();
+        
         showSuccess('Почта успешно создана');
-        } catch (error) {
+    } catch (error) {
         console.error('Error creating email:', error);
         showError(error.message || 'Ошибка при создании почты');
-        } finally {
-            hideLoading();
-        }
+    } finally {
+        hideLoading();
+    }
 }
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('DOM loaded');
+    
+    // Проверяем наличие сохраненной почты в кеше
+    const cachedEmail = getEmailFromCache();
+    
+    if (cachedEmail.email) {
+        currentEmail = cachedEmail.email;
+        const emailElement = document.getElementById('currentEmail');
+        if (emailElement) {
+            emailElement.textContent = currentEmail;
+        }
+        
+        // Загружаем сообщения для сохраненной почты
+        await loadMessages(currentEmail);
+        startAutoRefresh();
+    } else {
+        // Если почты нет в кеше, создаем новую
+        await createEmail();
+    }
+    
+    // Запускаем проверку здоровья сервера
+    await checkServerHealth();
+    serverHealthCheckInterval = setInterval(checkServerHealth, 30000);
+    
+    // Добавляем обработчик для кнопки создания новой почты
+    const newEmailButton = document.querySelector('.button.primary');
+    if (newEmailButton) {
+        newEmailButton.onclick = async () => {
+            clearEmailCache(); // Очищаем кеш перед созданием новой почты
+            await createEmail();
+        };
+    }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded');
@@ -451,91 +522,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let messages = JSON.parse(localStorage.getItem('messages') || '[]')
         .sort((a, b) => new Date(b.date) - new Date(a.date));
     let autoRefreshInterval = null;
-    
-    // Initialize from localStorage if exists
-    if (currentEmail) {
-        currentEmailElement.textContent = currentEmail;
-        renderMessages(messages);
-        updateMessageCount(messages.length);
-        startAutoRefresh();
-        // Тихая проверка сообщений без полноэкранной загрузки
-        loadMessages(currentEmail, true);
-    } else {
-    createEmail();
-    }
-    
-    // Copy email to clipboard
-    window.copyEmail = async () => {
-        if (currentEmail) {
-            try {
-                await navigator.clipboard.writeText(currentEmail);
-                
-                // Create and show beautiful notification
-                const notification = document.createElement('div');
-                notification.className = 'notification';
-                notification.innerHTML = `
-                    <div class="notification-content">
-                        <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                            <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
-                            <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-                        </svg>
-                        <span>Email скопирован в буфер обмена</span>
-                    </div>
-                `;
-                
-                document.body.appendChild(notification);
-                
-                // Remove notification after animation
-                setTimeout(() => {
-                    notification.style.animation = 'fadeOut 0.5s ease-out forwards';
-                    setTimeout(() => notification.remove(), 500);
-                }, 3000);
-                
-            } catch (err) {
-                showError('Не удалось скопировать email');
-            }
-        }
-    };
-    
-    // Refresh messages
-    window.refreshMessages = () => {
-        if (currentEmail) {
-            loadMessages(currentEmail);
-        }
-    };
-    
-    // Delete email
-    window.deleteEmail = async () => {
-        if (currentEmail) {
-            if (!confirm('Вы уверены, что хотите удалить этот почтовый ящик?')) {
-                return;
-            }
-            
-            try {
-                showLoading();
-                
-                // Сначала попробуем удалить почтовый ящик
-                const response = await fetch(`/api/email/delete/${currentEmail}`, {
-                    method: 'DELETE'
-                });
-                
-                if (!response.ok) {
-                    const data = await response.json();
-                    throw new Error(data.detail || 'Не удалось удалить почтовый ящик');
-                }
-                
-                // Создаем новый ящик только если удаление прошло успешно
-                await createEmail();
-                showSuccess('Почтовый ящик успешно удален');
-                
-            } catch (error) {
-                console.error('Error:', error);
-                showError(error.message);
-            } finally {
-                hideLoading();
-            }
-        }
-    };
     
     // Auto-refresh functionality
     function startAutoRefresh() {
@@ -2015,13 +2001,79 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Инициализация
     addTooltips();
-    
-    // Проверяем сохраненный email
-    const savedEmail = localStorage.getItem('currentEmail');
-    if (savedEmail) {
-        currentEmail = savedEmail;
-        document.getElementById('currentEmail').textContent = currentEmail;
-        loadMessages(currentEmail);
-        startAutoRefresh();
+});
+
+// Функции для копирования и управления почтой
+async function copyEmail() {
+    if (currentEmail) {
+        try {
+            await navigator.clipboard.writeText(currentEmail);
+            
+            // Create and show beautiful notification
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                        <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                        <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                    </svg>
+                    <span>Email скопирован в буфер обмена</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remove notification after animation
+            setTimeout(() => {
+                notification.style.animation = 'fadeOut 0.5s ease-out forwards';
+                setTimeout(() => notification.remove(), 500);
+            }, 3000);
+            
+        } catch (err) {
+            showError('Не удалось скопировать email');
+        }
     }
-}); 
+}
+
+async function refreshMessages() {
+    if (currentEmail) {
+        await loadMessages(currentEmail);
+    }
+}
+
+async function deleteEmail() {
+    if (currentEmail) {
+        if (!confirm('Вы уверены, что хотите удалить этот почтовый ящик?')) {
+            return;
+        }
+        
+        try {
+            showLoading();
+            
+            const response = await fetch(`/api/email/delete/${currentEmail}`, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.detail || 'Не удалось удалить почтовый ящик');
+            }
+            
+            clearEmailCache();
+            await createEmail();
+            showSuccess('Почтовый ящик успешно удален');
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showError(error.message);
+        } finally {
+            hideLoading();
+        }
+    }
+}
+
+// Добавляем функции в глобальную область видимости
+window.copyEmail = copyEmail;
+window.refreshMessages = refreshMessages;
+window.deleteEmail = deleteEmail; 
