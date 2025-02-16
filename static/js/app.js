@@ -203,38 +203,42 @@ function startEmailExpiryTimer(creationTime) {
 
 // Функция для добавления подсказок к кнопкам
 function addTooltips() {
-    const buttons = document.querySelectorAll('.button');
-    buttons.forEach(button => {
-        const text = button.querySelector('span')?.textContent;
-        if (text) {
-            button.setAttribute('data-tooltip', text);
-            button.classList.add('tooltip');
-        }
-    });
+    // Removing tooltip functionality as per request
 }
 
 // Модифицируем функцию createEmail
 async function createEmail() {
-    showLoading();
+    const newEmailButton = document.querySelector('.button.primary');
+    if (newEmailButton) {
+        newEmailButton.classList.add('loading');
+        const originalContent = newEmailButton.innerHTML;
+        newEmailButton.innerHTML = `
+            <svg class="loading-spinner" viewBox="0 0 50 50">
+                <circle cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+            </svg>
+            <span>Создание...</span>
+        `;
+    }
+
     try {
-        const response = await fetch('/api/email/create', {
-            method: 'POST',
-            headers: {
+            const response = await fetch('/api/email/create', {
+                method: 'POST',
+                headers: {
                 'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                service: 'temp-mail'
+                },
+                body: JSON.stringify({
+                    service: 'temp-mail'
             })
-        });
-        
-        if (!response.ok) {
+            });
+            
+            if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.detail || 'Ошибка создания почты');
-        }
-        
+            }
+            
         const data = await response.json();
-        currentEmail = data.email;
-        
+            currentEmail = data.email;
+    
         // Сохраняем email в кеш
         saveEmailToCache(currentEmail);
         
@@ -246,17 +250,26 @@ async function createEmail() {
         
         // Запускаем проверку сообщений
         await loadMessages(currentEmail);
-        startAutoRefresh();
-        
+            startAutoRefresh();
+            
         showSuccess('Почта успешно создана');
-    } catch (error) {
+        } catch (error) {
         console.error('Error creating email:', error);
         showError(error.message || 'Ошибка при создании почты');
-    } finally {
-        hideLoading();
+        } finally {
+        if (newEmailButton) {
+            newEmailButton.classList.remove('loading');
+            newEmailButton.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"></path>
+                </svg>
+                <span>Новая почта</span>
+            `;
+        }
+            hideLoading();
+        }
     }
-}
-
+    
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM loaded');
