@@ -262,67 +262,35 @@ body {
 }
 
 .button {
+    position: relative;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
-    border-radius: 0.5rem;
+    font-size: 0.875rem;
     font-weight: 500;
+    border-radius: 0.5rem;
+    border: none;
     cursor: pointer;
     transition: all 0.2s ease;
-    border: none;
     background: var(--primary-color);
     color: white;
-    position: relative;
-    overflow: hidden;
-}
-
-.button.loading {
-    cursor: not-allowed;
-    opacity: 0.8;
-}
-
-.button.loading .loading-spinner {
-    width: 20px;
-    height: 20px;
-    animation: spin 1s linear infinite;
-}
-
-.button.loading .loading-spinner circle {
-    stroke: currentColor;
-    stroke-linecap: round;
-    animation: dash 1.5s ease-in-out infinite;
-}
-
-@keyframes spin {
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-@keyframes dash {
-    0% {
-        stroke-dasharray: 1, 150;
-        stroke-dashoffset: 0;
-    }
-    50% {
-        stroke-dasharray: 90, 150;
-        stroke-dashoffset: -35;
-    }
-    100% {
-        stroke-dasharray: 90, 150;
-        stroke-dashoffset: -124;
-    }
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .button:hover {
-    background-color: var(--primary-color);
-    color: var(--text-color);
-    box-shadow: 0 0 10px var(--primary-color);
+    background: var(--primary-dark);
+    transform: translateY(-1px);
 }
 
 .button:active {
     transform: translateY(0);
+}
+
+.button:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .button.danger {
@@ -1835,7 +1803,7 @@ select:hover {
 
 .tooltip::before,
 .tooltip::after {
-    display: none;
+    display: none !important;
 }
 
 /* Улучшаем доступность */
@@ -1851,31 +1819,24 @@ select:hover {
 /* Добавляем индикатор загрузки для кнопок */
 .button.loading {
     position: relative;
-    pointer-events: none;
+    cursor: not-allowed;
+    opacity: 0.8;
 }
 
-.button.loading span {
-    opacity: 0;
-}
-
-.button.loading::after {
-    content: '';
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    border: 2px solid transparent;
-    border-top-color: currentColor;
-    border-right-color: currentColor;
+.button-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
-    animation: button-loading-spinner 0.75s linear infinite;
+    border-top-color: #fff;
+    animation: spin 0.8s linear infinite;
 }
 
-@keyframes button-loading-spinner {
-    from {
-        transform: rotate(0turn);
-    }
+@keyframes spin {
     to {
-        transform: rotate(1turn);
+        transform: rotate(360deg);
     }
 }
 
