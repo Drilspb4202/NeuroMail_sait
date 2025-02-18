@@ -10,7 +10,7 @@ services:
       chmod -R 755 /data
       touch /data/logs/app.log
       chmod 644 /data/logs/app.log
-      uvicorn main:app --host 0.0.0.0 --port $PORT --workers 4 --log-level info --timeout-keep-alive 75 --limit-max-requests 10000 --proxy-headers --forwarded-allow-ips='*' --reload-dir /data --reload-delay 5
+      uvicorn main:app --host 0.0.0.0 --port $PORT --workers 4 --log-level info --timeout-keep-alive 120 --limit-max-requests 100000 --proxy-headers --forwarded-allow-ips='*'
     envVars:
       - key: PYTHON_VERSION
         value: 3.8.0
@@ -27,25 +27,25 @@ services:
       - key: BROWSER_HEADLESS
         value: true
       - key: STATIC_FILES_MAX_AGE
-        value: "0"
+        value: "3600"
       - key: WORKERS_PER_CORE
         value: "2"
       - key: MAX_WORKERS
         value: "4"
       - key: GRACEFUL_TIMEOUT
-        value: "30"
+        value: "60"
       - key: WEB_CONCURRENCY
         value: "4"
       - key: KEEP_ALIVE
-        value: "75"
+        value: "120"
       - key: MAX_REQUESTS
-        value: "10000"
+        value: "100000"
       - key: MAX_REQUESTS_JITTER
-        value: "2000"
-    autoDeploy: true
+        value: "5000"
+    autoDeploy: false
     healthCheckPath: /health
-    healthCheckTimeout: 30
-    healthCheckInterval: 15
+    healthCheckTimeout: 60
+    healthCheckInterval: 30
     minInstances: 1
     maxInstances: 1
     disk:
