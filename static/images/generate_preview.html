@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Preview</title>
+</head>
+<body>
+    <canvas id="canvas" width="1200" height="630" style="border:1px solid #000;"></canvas>
+    <br>
+    <button onclick="downloadImage()">Download Image</button>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Задаем градиентный фон
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, '#0f172a');
+        gradient.addColorStop(1, '#1e1b4b');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Добавляем неоновое свечение
+        ctx.shadowBlur = 30;
+        ctx.shadowColor = '#a855f7';
+        
+        // Рисуем логотип
+        ctx.font = 'bold 120px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('NeuroMail', canvas.width/2, canvas.height/2 - 50);
+        
+        // Добавляем подзаголовок
+        ctx.shadowBlur = 0;
+        ctx.font = '40px Inter, sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('Умный сервис временной почты', canvas.width/2, canvas.height/2 + 50);
+        
+        // Функция для скачивания изображения
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'neuromail-preview.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html> 
