@@ -243,23 +243,23 @@ async function createEmail() {
     setButtonLoading(newEmailButton, true);
     
     try {
-        const response = await fetch('/api/email/create', {
-            method: 'POST',
-            headers: {
+            const response = await fetch('/api/email/create', {
+                method: 'POST',
+                headers: {
                 'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                service: 'temp-mail'
+                },
+                body: JSON.stringify({
+                    service: 'temp-mail'
             })
-        });
-        
-        if (!response.ok) {
+            });
+            
+            if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.detail || 'Ошибка создания почты');
-        }
-        
+            }
+            
         const data = await response.json();
-        currentEmail = data.email;
+            currentEmail = data.email;
         
         // Сохраняем email в кеш
         saveEmailToCache(currentEmail);
@@ -272,18 +272,18 @@ async function createEmail() {
         
         // Запускаем проверку сообщений
         await loadMessages(currentEmail);
-        startAutoRefresh();
-        
+            startAutoRefresh();
+            
         showSuccess('Почта успешно создана');
-    } catch (error) {
+        } catch (error) {
         console.error('Error creating email:', error);
         showError(error.message || 'Ошибка при создании почты');
-    } finally {
+        } finally {
         setButtonLoading(newEmailButton, false);
-        hideLoading();
+            hideLoading();
+        }
     }
-}
-
+    
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM loaded');
@@ -675,10 +675,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="community-promo">
                     <div class="promo-content">
                         <div class="promo-text">
-                            <h2 class="promo-title">Посетите канал по аромотерапии</h2>
-                            <p class="promo-description">Присоединяйтесь и узнайте секреты эфирных масел и аромадиагностики! (На правах рекламы)</p>
+                            <h2 class="promo-title">Оля | PROтехничку | Кейсы</h2>
+                            <p class="promo-description">Чат-боты, платежи, GetCourse, Tilda — настройка под ключ! 🚀</p>
                         </div>
-                        <a href="https://t.me/radmila_essential_oil" target="_blank" rel="noopener noreferrer" class="telegram-button">
+                        <a href="https://t.me/olyaPROtechnichku" target="_blank" rel="noopener noreferrer" class="telegram-button">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215l-16.5 7.5a2.25 2.25 0 0 0 .126 4.17l3.9 1.3v3.882a2.25 2.25 0 0 0 3.898 1.549l2.876-2.876 3.837 2.87a2.242 2.242 0 0 0 3.527-1.376l4.5-16.5a2.25 2.25 0 0 0-2.742-2.734z"></path>
                             </svg>
